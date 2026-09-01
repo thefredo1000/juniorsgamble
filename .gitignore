@@ -1,0 +1,7 @@
+.venv/
+venv/
+__pycache__/
+*.o
+*.elf
+*.gba
+.DS_Store
