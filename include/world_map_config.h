@@ -22,27 +22,24 @@ namespace Game::world_map_config
     };
 
     constexpr bn::string_view guide_dialog_lines[] = {
-        "Welcome to Juniors!",
-        "Use PAD to move around.",
-        "Press A facing someone",
-        "to start a conversation.",
-        "Talk to the host when",
-        "you are ready to play."
+        "Hello, my name is Junior P. Luche!",
+        "",
+        "You look a lot like me...",
+        "aren't you my brother?",
     };
 
     constexpr bn::string_view host_dialog_lines[] = {
-        "Casino host speaking!",
-        "First time in town?",
-        "I can set up a table.",
-        "Answer my question",
-        "and we will begin."
+        "Hello, my name is Junior P. Luche!",
+        "",
+        "I'm the dealer here!",
+        "Hold on... you look a lot like me.",
     };
 
     constexpr bn::string_view traveler_dialog_lines[] = {
-        "I came for one hand",
-        "and stayed all night.",
-        "If you lose chips,",
-        "take a break and chat."
+        "Hello, my name is Junior P. Luche!",
+        "",
+        "You look a lot like me...",
+        "aren't you my brother?",
     };
 
     constexpr npc_definition npc_definitions[] = {

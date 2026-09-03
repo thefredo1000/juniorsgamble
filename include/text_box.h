@@ -25,6 +25,13 @@ namespace Game
         TextBox& set_alignment(alignment_type alignment);
         TextBox& set_line_height(bn::fixed line_height);
 
+        // Sets the background priority applied to every sprite this TextBox
+        // generates from now on (see bn::sprite_ptr::set_bg_priority).
+        // Useful when the text has to win a layering tie against another
+        // background, e.g. DialogueBox's own panel art. -1 (the default)
+        // leaves generated sprites at Butano's default priority.
+        TextBox& set_bg_priority(int bg_priority);
+
         void clear();
 
         // Draws a single line at (x, y).
@@ -37,6 +44,7 @@ namespace Game
         bn::sprite_text_generator& _text_generator;
         bn::ivector<bn::sprite_ptr>& _sprites;
         bn::fixed _line_height = 16;
+        int _bg_priority = -1;
     };
 }
 

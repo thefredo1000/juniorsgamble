@@ -22,6 +22,12 @@ namespace Game
         return *this;
     }
 
+    TextBox& TextBox::set_bg_priority(int bg_priority)
+    {
+        _bg_priority = bg_priority;
+        return *this;
+    }
+
     void TextBox::clear()
     {
         _sprites.clear();
@@ -29,7 +35,17 @@ namespace Game
 
     TextBox& TextBox::line(bn::fixed x, bn::fixed y, bn::string_view text)
     {
+        const int previous_size = _sprites.size();
         _text_generator.generate(x, y, text, _sprites);
+
+        if(_bg_priority >= 0)
+        {
+            for(int index = previous_size; index < _sprites.size(); ++index)
+            {
+                _sprites[index].set_bg_priority(_bg_priority);
+            }
+        }
+
         return *this;
     }
 

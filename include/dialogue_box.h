@@ -1,6 +1,7 @@
 #ifndef DIALOGUE_BOX_H
 #define DIALOGUE_BOX_H
 
+#include "bn_regular_bg_ptr.h"
 #include "bn_sprite_ptr.h"
 #include "bn_sprite_text_generator.h"
 #include "bn_string_view.h"
@@ -12,9 +13,10 @@ namespace Game
 {
     // Reusable paginated dialogue/message box. Shows lines two at a time
     // with an "A:Next" hint, can end on a yes/no question, and can show a
-    // one-off notice. Owns its own paging state, so callers just call
-    // open()/advance()/close() instead of hand-rolling a line-index state
-    // machine per screen.
+    // one-off notice. Owns its own paging state and its own background
+    // panel art, so callers just call open()/advance()/close() instead of
+    // hand-rolling a line-index state machine (or a text_box.bmp panel)
+    // per screen.
     class DialogueBox
     {
     public:
@@ -59,6 +61,7 @@ namespace Game
         void redraw_lines();
         void redraw_question();
 
+        bn::regular_bg_ptr _background;
         TextBox _text_box;
 
         const bn::string_view* _lines = nullptr;

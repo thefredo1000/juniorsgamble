@@ -36,12 +36,9 @@ namespace
         COMING_SOON
     };
 
-    void wait_for_start(bn::sprite_text_generator& text_generator)
+    void wait_for_start()
     {
         bn::vector<bn::sprite_ptr, 32> text_sprites;
-        Game::TextBox(text_generator, text_sprites)
-                .set_alignment(Game::TextBox::alignment_type::CENTER)
-                .line(0, 62, "PRESS START");
 
         while(! Game::input::confirm_pressed())
         {
@@ -66,8 +63,7 @@ namespace
 
         bn::blending::set_fade_alpha(0);
 
-        bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
-        wait_for_start(text_generator);
+        wait_for_start();
     }
 
     MenuOption run_menu_scene(bn::sprite_text_generator& text_generator)

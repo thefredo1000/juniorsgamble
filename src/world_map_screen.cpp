@@ -132,8 +132,7 @@ namespace Game
         bn::vector<bn::sprite_ptr, 64> hud_sprites;
         TextBox hud_text_box(text_generator, hud_sprites);
         hud_text_box.set_alignment(TextBox::alignment_type::CENTER)
-                .line(0, -68, "World map")
-                .line(0, 60, "A: Talk  B: Back");
+                .line(0, -68, "World map");
 
         hud_text_box.set_alignment(TextBox::alignment_type::LEFT)
                 .line(-112, -68, text::format<16>("Money: ${}", load_money()));
