@@ -17,12 +17,8 @@ namespace Game::world_map_state
         int step_cooldown = 0;
 
         bool can_interact = false;
-        bool in_dialog = false;
-        bool in_question = false;
 
         int active_npc_index = -1;
-        int dialog_line_index = 0;
-        int question_index = 0;
     };
 }
 

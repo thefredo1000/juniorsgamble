@@ -38,9 +38,7 @@ namespace Game::world_map_interaction
 
     void begin_dialog_state(world_map_state::runtime_state& state, int npc_index)
     {
-        state.in_dialog = true;
         state.active_npc_index = npc_index;
-        state.dialog_line_index = 0;
         state.can_interact = false;
     }
 }

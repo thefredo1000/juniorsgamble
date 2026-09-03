@@ -15,6 +15,8 @@
 #include "bn_sprite_builder.h"
 #include "bn_keypad.h"
 
+#include "text_box.h"
+
 namespace Game
 {
     SceneType extras_screen()
@@ -25,8 +27,9 @@ namespace Game
         title_text_generator.set_center_alignment();
 
         bn::vector<bn::sprite_ptr, 64> text_sprites;
+        TextBox title_text_box(title_text_generator, text_sprites);
 
-        title_text_generator.generate(0, 8 - text_y_limit, "How to play:", text_sprites);
+        title_text_box.line(0, 8 - text_y_limit, "How to play:");
 
         // Scale the text
         for (int i = 0; i < text_sprites.size(); i++)
@@ -36,10 +39,12 @@ namespace Game
 
         bn::sprite_text_generator description_text_generator(common::variable_8x8_sprite_font);
         description_text_generator.set_center_alignment();
-        description_text_generator.generate(0, -20, "- press A to play", text_sprites);
-        description_text_generator.generate(0, 0, "- press A to call", text_sprites);
-        description_text_generator.generate(0, 20, "- press B to fold", text_sprites);
-        description_text_generator.generate(0, 40, "- if you lose you money it's over", text_sprites);
+
+        TextBox description_text_box(description_text_generator, text_sprites);
+        description_text_box.line(0, -20, "- press A to play");
+        description_text_box.line(0, 0, "- press A to call");
+        description_text_box.line(0, 20, "- press B to fold");
+        description_text_box.line(0, 40, "- if you lose you money it's over");
 
         bool play = true;
         while (play)

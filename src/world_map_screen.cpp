@@ -12,10 +12,14 @@
 #include "bn_vector.h"
 
 #include "bn_affine_bg_items_land.h"
-#include "bn_sprite_items_ninja.h"
+#include "bn_sprite_items_junior.h"
 
 #include "common_variable_8x16_sprite_font.h"
+#include "dialogue_box.h"
 #include "game_input.h"
+#include "money.h"
+#include "text_box.h"
+#include "text_format.h"
 #include "world_map_config.h"
 #include "world_map_dialog.h"
 #include "world_map_interaction.h"
@@ -50,8 +54,8 @@ namespace
                             int local_solid_rect_count,
                             int current_x,
                             int current_y,
-                            bn::sprite_ptr& ninja_sprite,
-                            bn::sprite_animate_action<4>& ninja_animate_action)
+                            bn::sprite_ptr& junior_sprite,
+                            bn::sprite_animate_action<4>& junior_animate_action)
     {
         const Game::world_map_movement::direction_input_result input_result =
                 Game::world_map_movement::process_direction_input(state, input_direction, held);
@@ -62,11 +66,11 @@ namespace
         }
 
         Game::world_map_player_visual::update_walk_animation(state, input_direction,
-                                                              ninja_sprite, ninja_animate_action);
+                                                              junior_sprite, junior_animate_action);
 
         if(input_result == Game::world_map_movement::direction_input_result::turned)
         {
-            Game::world_map_player_visual::set_standing_frame(ninja_sprite, input_direction);
+            Game::world_map_player_visual::set_standing_frame(junior_sprite, input_direction);
             return true;
         }
 
@@ -126,8 +130,13 @@ namespace Game
         text_generator.set_center_alignment();
 
         bn::vector<bn::sprite_ptr, 64> hud_sprites;
-        text_generator.generate(0, -68, "World map", hud_sprites);
-        text_generator.generate(0, 60, "A: Talk  B: Back", hud_sprites);
+        TextBox hud_text_box(text_generator, hud_sprites);
+        hud_text_box.set_alignment(TextBox::alignment_type::CENTER)
+                .line(0, -68, "World map")
+                .line(0, 60, "A: Talk  B: Back");
+
+        hud_text_box.set_alignment(TextBox::alignment_type::LEFT)
+                .line(-112, -68, text::format<16>("Money: ${}", load_money()));
 
         bn::affine_bg_ptr land_bg = bn::affine_bg_items::land.create_bg(0, 0);
         land_bg.set_pivot_position(start_world_x, start_world_y);
@@ -135,17 +144,17 @@ namespace Game
         const int x_limit = (land_bg.dimensions().width() - bn::display::width()) / 2;
         const int y_limit = (land_bg.dimensions().height() - bn::display::height()) / 2;
 
-        bn::sprite_ptr ninja_sprite = bn::sprite_items::ninja.create_sprite(0, 0);
-        bn::sprite_animate_action<4> ninja_animate_action = bn::create_sprite_animate_action_forever(
-                ninja_sprite, 4, bn::sprite_items::ninja.tiles_item(), 0, 1, 2, 3);
+        bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(0, 0);
+        bn::sprite_animate_action<4> junior_animate_action = bn::create_sprite_animate_action_forever(
+                junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
 
         bn::vector<bn::sprite_ptr, 8> npc_sprites;
 
         for(int npc_index = 0; npc_index < npc_count; ++npc_index)
         {
             const npc_definition& npc = npc_definitions[npc_index];
-            bn::sprite_ptr npc_sprite = bn::sprite_items::ninja.create_sprite(0, 0);
-            npc_sprite.set_tiles(bn::sprite_items::ninja.tiles_item().create_tiles(npc.standing_frame));
+            bn::sprite_ptr npc_sprite = bn::sprite_items::junior.create_sprite(0, 0);
+            npc_sprite.set_tiles(bn::sprite_items::junior.tiles_item().create_tiles(npc.standing_frame));
             npc_sprites.push_back(bn::move(npc_sprite));
         }
 
@@ -154,15 +163,16 @@ namespace Game
         state.target_pivot_y = start_world_y;
 
         bn::vector<bn::sprite_ptr, 96> dialog_sprites;
+        DialogueBox dialogue_box(text_generator, dialog_sprites);
 
         auto start_npc_dialog = [&](int npc_index)
         {
             const int npc_standing_frame = world_map_interaction::npc_dialog_facing_frame(state.facing_direction);
             npc_sprites[npc_index].set_tiles(
-                    bn::sprite_items::ninja.tiles_item().create_tiles(npc_standing_frame));
+                    bn::sprite_items::junior.tiles_item().create_tiles(npc_standing_frame));
 
             world_map_interaction::begin_dialog_state(state, npc_index);
-            world_map_dialog::redraw_dialog(state, npc_definitions, text_generator, dialog_sprites);
+            world_map_dialog::begin_dialog(dialogue_box, npc_definitions, npc_index);
         };
 
         while(true)
@@ -170,11 +180,24 @@ namespace Game
             world_map_npc_visual::sync_npc_sprites(npc_definitions, npc_count, land_bg, npc_sprites);
 
             const world_map_dialog::dialog_update_result dialog_result =
-                    world_map_dialog::update_dialog(state, npc_definitions, host_npc_index,
-                                                    text_generator, dialog_sprites);
+                    world_map_dialog::update_dialog(dialogue_box, state, host_npc_index);
             if(dialog_result == world_map_dialog::dialog_update_result::start_poker)
             {
-                return true;
+                if(load_money() > 0)
+                {
+                    return true;
+                }
+
+                world_map_dialog::close_dialog(dialogue_box, state);
+                dialogue_box.open_notice("You're out of money!", "Come back after a break.");
+
+                while(! input::confirm_pressed() && ! input::back_pressed())
+                {
+                    bn::core::update();
+                }
+
+                dialogue_box.close();
+                continue;
             }
 
             if(dialog_result == world_map_dialog::dialog_update_result::continue_loop)
@@ -194,25 +217,25 @@ namespace Game
                                    npc_definitions, npc_count,
                                    solid_rects, solid_rect_count,
                                    current_x, current_y,
-                                   ninja_sprite, ninja_animate_action) ||
+                                   junior_sprite, junior_animate_action) ||
                 try_move_direction(state, direction::right, bn::keypad::right_held(), tile_step, 0,
                                    x_limit, y_limit,
                                    npc_definitions, npc_count,
                                    solid_rects, solid_rect_count,
                                    current_x, current_y,
-                                   ninja_sprite, ninja_animate_action) ||
+                                   junior_sprite, junior_animate_action) ||
                 try_move_direction(state, direction::up, bn::keypad::up_held(), 0, -tile_step,
                                    x_limit, y_limit,
                                    npc_definitions, npc_count,
                                    solid_rects, solid_rect_count,
                                    current_x, current_y,
-                                   ninja_sprite, ninja_animate_action) ||
+                                   junior_sprite, junior_animate_action) ||
                 try_move_direction(state, direction::down, bn::keypad::down_held(), 0, tile_step,
                                    x_limit, y_limit,
                                    npc_definitions, npc_count,
                                    solid_rects, solid_rect_count,
                                    current_x, current_y,
-                                   ninja_sprite, ninja_animate_action);
+                                   junior_sprite, junior_animate_action);
             }
 
             const world_map_movement::axis_motion_result x_motion =
@@ -225,7 +248,7 @@ namespace Game
 
             if(state.remaining_move_x || state.remaining_move_y)
             {
-                ninja_animate_action.update();
+                junior_animate_action.update();
             }
 
             if(! bn::keypad::a_held() && ! bn::keypad::start_held())

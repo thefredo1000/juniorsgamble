@@ -14,6 +14,7 @@
 #include "common_variable_8x16_sprite_font.h"
 #include "game_input.h"
 #include "poker_minigame.h"
+#include "text_box.h"
 #include "world_map_screen.h"
 
 namespace
@@ -38,8 +39,9 @@ namespace
     void wait_for_start(bn::sprite_text_generator& text_generator)
     {
         bn::vector<bn::sprite_ptr, 32> text_sprites;
-        text_generator.set_center_alignment();
-        text_generator.generate(0, 62, "PRESS START", text_sprites);
+        Game::TextBox(text_generator, text_sprites)
+                .set_alignment(Game::TextBox::alignment_type::CENTER)
+                .line(0, 62, "PRESS START");
 
         while(! Game::input::confirm_pressed())
         {
@@ -74,20 +76,22 @@ namespace
         menu_background.set_blending_enabled(false);
 
         bn::vector<bn::sprite_ptr, 64> text_sprites;
-        text_generator.set_center_alignment();
-        text_generator.generate(0, -56, "Juniors Casino", text_sprites);
-        text_generator.generate(0, -12, "Poker", text_sprites);
-        text_generator.generate(0, 16, "More Soon", text_sprites);
-        text_generator.generate(0, 62, "A: Select", text_sprites);
+        Game::TextBox text_box(text_generator, text_sprites);
+        text_box.set_alignment(Game::TextBox::alignment_type::CENTER)
+                .line(0, -56, "Juniors Casino")
+                .line(0, -12, "Poker")
+                .line(0, 16, "More Soon")
+                .line(0, 62, "A: Select");
 
         bn::vector<bn::sprite_ptr, 4> cursor_sprites;
+        Game::TextBox cursor_box(text_generator, cursor_sprites);
         int selected_index = 0;
 
         while(true)
         {
-            cursor_sprites.clear();
+            cursor_box.clear();
             const int cursor_y = selected_index == 0 ? -12 : 16;
-            text_generator.generate(-58, cursor_y, ">", cursor_sprites);
+            cursor_box.line(-58, cursor_y, ">");
 
             if(bn::keypad::up_pressed())
             {
@@ -112,8 +116,9 @@ namespace
         info_background.set_blending_enabled(false);
 
         bn::vector<bn::sprite_ptr, 32> info_sprites;
-        text_generator.set_center_alignment();
-        text_generator.generate(0, 44, "More games soon", info_sprites);
+        Game::TextBox(text_generator, info_sprites)
+                .set_alignment(Game::TextBox::alignment_type::CENTER)
+                .line(0, 44, "More games soon");
 
         while(! Game::input::confirm_pressed() && ! Game::input::back_pressed())
         {

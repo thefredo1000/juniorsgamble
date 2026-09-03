@@ -23,7 +23,7 @@
 
 #include "load_attributes.h"
 
-#include "bn_sprite_items_ninja.h"
+#include "bn_sprite_items_junior.h"
 #include "bn_affine_bg_items_land.h"
 #include "bn_affine_bg_items_clouds.h"
 
@@ -32,8 +32,8 @@ int main()
     bn::core::init();
 
     constexpr bn::string_view info_text_lines[] = {
-        "PAD: move ninja",
-        "PAD+A: move ninja faster",
+        "PAD: move junior",
+        "PAD+A: move junior faster",
         "",
         "START: go to next scene",
     };
@@ -86,9 +86,9 @@ int main()
     bn::affine_bg_dy_register_hbe_ptr clouds_dy_hbe =
             bn::affine_bg_dy_register_hbe_ptr::create(clouds_bg, clouds_attributes._data);
 
-    bn::sprite_ptr ninja_sprite = bn::sprite_items::ninja.create_sprite(0, 0);
-    bn::sprite_animate_action<4> ninja_animate_action = bn::create_sprite_animate_action_forever(
-                ninja_sprite, 12, bn::sprite_items::ninja.tiles_item(), 0, 1, 2, 3);
+    bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(0, 0);
+    bn::sprite_animate_action<4> junior_animate_action = bn::create_sprite_animate_action_forever(
+                junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
 
     union direction
     {
@@ -164,24 +164,24 @@ int main()
         {
             if(new_direction.keys.left)
             {
-                ninja_animate_action = bn::create_sprite_animate_action_forever(
-                            ninja_sprite, 12, bn::sprite_items::ninja.tiles_item(), 8, 9, 10, 11);
+                junior_animate_action = bn::create_sprite_animate_action_forever(
+                            junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 8, 9, 10, 11);
             }
             else if(new_direction.keys.right)
             {
-                ninja_animate_action = bn::create_sprite_animate_action_forever(
-                            ninja_sprite, 12, bn::sprite_items::ninja.tiles_item(), 12, 13, 14, 15);
+                junior_animate_action = bn::create_sprite_animate_action_forever(
+                            junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 12, 13, 14, 15);
             }
 
             if(new_direction.keys.up)
             {
-                ninja_animate_action = bn::create_sprite_animate_action_forever(
-                            ninja_sprite, 12, bn::sprite_items::ninja.tiles_item(), 4, 5, 6, 7);
+                junior_animate_action = bn::create_sprite_animate_action_forever(
+                            junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 4, 5, 6, 7);
             }
             else if(new_direction.keys.down)
             {
-                ninja_animate_action = bn::create_sprite_animate_action_forever(
-                            ninja_sprite, 12, bn::sprite_items::ninja.tiles_item(), 0, 1, 2, 3);
+                junior_animate_action = bn::create_sprite_animate_action_forever(
+                            junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
             }
 
             last_direction = new_direction;
@@ -189,7 +189,7 @@ int main()
 
         for(int index = 0; index < inc; ++index)
         {
-            ninja_animate_action.update();
+            junior_animate_action.update();
         }
 
         info.update();

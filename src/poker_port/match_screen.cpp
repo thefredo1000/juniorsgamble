@@ -2,8 +2,6 @@
 
 #include "bn_core.h"
 #include "bn_bg_palettes.h"
-#include "bn_sram.h"
-#include "bn_string.h"
 #include "bn_keypad.h"
 #include "bn_display.h"
 
@@ -26,7 +24,9 @@
 #include "poker_hand.h"
 #include "poker_table.h"
 #include "menu_screen.h"
-#include "sram.h"
+#include "money.h"
+#include "text_box.h"
+#include "text_format.h"
 
 namespace Game
 {
@@ -120,21 +120,24 @@ namespace Game
     {
         bn::bg_palettes::set_transparent_color(poker_table_green);
 
-        // Read money from SRAM
-        int money = read_sram();
+        // Read money from the shared game-wide money system
+        int money = load_money();
 
         // Text Sprites
         bn::vector<bn::sprite_ptr, 64> text_sprites;
-        bn::string<32> text;
-        bn::ostringstream text_stream(text);
-        text_stream.append("Press A to play");
-        text_generator.generate(-50, -70, text, text_sprites);
-        text_generator.generate(-114, 70, "Money: ", text_sprites);
+        TextBox text_box(text_generator, text_sprites);
+        text_box.set_alignment(TextBox::alignment_type::LEFT).line(-50, -70, "Press A to play");
 
         bn::vector<bn::sprite_ptr, 4> money_sprites;
-        bn::vector<bn::sprite_ptr, 4> deal_sprites;
-        bn::vector<bn::sprite_ptr, 4> call_sprites;
-        text_generator.generate(-72, 70, bn::to_string<32>(money), money_sprites);
+        TextBox money_box(text_generator, money_sprites);
+        money_box.set_alignment(TextBox::alignment_type::LEFT);
+
+        auto redraw_money = [&]()
+        {
+            money_box.clear();
+            money_box.line(-114, 70, text::format<24>("Money: {}", money));
+        };
+        redraw_money();
 
         // First Deck
         Poker::Deck deck = Poker::Deck();
@@ -173,17 +176,17 @@ namespace Game
         // Ante Margin Sprites
         bn::sprite_ptr ante_margin_sprite = bn::sprite_items::chip_margin.create_sprite(-18, 50);
         ante_margin_sprite.set_z_order(1);
-        text_generator.generate(-32, 70, "ante", text_sprites);
+        text_box.line(-32, 70, "ante");
 
         // Call Margin Sprites
         bn::sprite_ptr call_margin_sprite = bn::sprite_items::chip_margin.create_sprite(18, 50);
         call_margin_sprite.set_z_order(1);
-        text_generator.generate(8, 70, "call", text_sprites);
+        text_box.line(8, 70, "call");
 
         // Blind Margin Sprites
         bn::sprite_ptr blind_margin_sprite = bn::sprite_items::chip_margin.create_sprite(45, 50);
         blind_margin_sprite.set_z_order(1);
-        text_generator.generate(32, 70, "blind", text_sprites);
+        text_box.line(32, 70, "blind");
 
         // Ante Chip Sprite
         bn::sprite_ptr ante_chip_sprite = bn::sprite_items::chips.create_sprite(-18, 47);
@@ -240,11 +243,7 @@ namespace Game
                 {
                     // Place bet
                     money -= bet_amount;
-                    for (bn::sprite_ptr &money_sprite : money_sprites)
-                    {
-                        money_sprite.set_visible(false);
-                    }
-                    text_generator.generate(-72, 70, bn::to_string<32>(money), deal_sprites);
+                    redraw_money();
                     ante_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
                     ante_chip_sprite.set_visible(true);
 
@@ -285,7 +284,7 @@ namespace Game
                 if (bn::keypad::b_pressed())
                 {
                     // Fold
-                    write_sram(money);
+                    save_money(money);
                     table.set_state(Poker::Table::State::END);
                     play = false;
                 }
@@ -293,11 +292,7 @@ namespace Game
                 {
                     // Call
                     money -= bet_amount * 2;
-                    for (bn::sprite_ptr &money_sprite : deal_sprites)
-                    {
-                        money_sprite.set_visible(false);
-                    }
-                    text_generator.generate(-72, 70, bn::to_string<32>(money), call_sprites);
+                    redraw_money();
                     call_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
                     call_chip_sprite.set_visible(true);
 
@@ -332,16 +327,16 @@ namespace Game
                     switch (res.player_result)
                     {
                     case (Poker::MatchResult::WIN):
-                        text_generator.generate(80, 70, "You Won!", text_sprites);
+                        text_box.line(80, 70, "You Won!");
                         money += res.pot;
-                        write_sram(money);
+                        save_money(money);
                         break;
                     case (Poker::MatchResult::LOSE):
-                        text_generator.generate(80, 70, "You Lost!", text_sprites);
-                        write_sram(money);
+                        text_box.line(80, 70, "You Lost!");
+                        save_money(money);
                         break;
                     default:
-                        text_generator.generate(80, 70, "TIE", text_sprites);
+                        text_box.line(80, 70, "TIE");
                         break;
                     }
 

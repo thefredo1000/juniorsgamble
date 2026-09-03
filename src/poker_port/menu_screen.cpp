@@ -15,6 +15,8 @@
 #include "bn_sprite_builder.h"
 #include "bn_keypad.h"
 
+#include "text_box.h"
+
 namespace Game
 {
     SceneType menu_screen()
@@ -25,10 +27,11 @@ namespace Game
         title_text_generator.set_center_alignment();
 
         bn::vector<bn::sprite_ptr, 32> text_sprites;
+        TextBox text_box(title_text_generator, text_sprites);
 
-        title_text_generator.generate(0, 40 - text_y_limit, "Play", text_sprites);
-        title_text_generator.generate(0, 64 - text_y_limit, "Extras", text_sprites);
-        title_text_generator.generate(0, 88 - text_y_limit, "Exit", text_sprites);
+        text_box.line(0, 40 - text_y_limit, "Play")
+                .line(0, 64 - text_y_limit, "Extras")
+                .line(0, 88 - text_y_limit, "Exit");
 
         // Scale the text
         for (int i = 0; i < text_sprites.size(); i++)
