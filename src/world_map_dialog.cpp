@@ -24,7 +24,7 @@ namespace Game::world_map_dialog
 
     dialog_update_result update_dialog(DialogueBox& dialogue_box,
                                        world_map_state::runtime_state& state,
-                                       int host_npc_index)
+                                       const world_map_config::npc_definition* npc_definitions)
     {
         const bool confirm_pressed = Game::input::confirm_pressed();
 
@@ -32,6 +32,10 @@ namespace Game::world_map_dialog
         {
             return dialog_update_result::no_dialog;
         }
+
+        const world_map_config::npc_game_trigger active_trigger =
+                state.active_npc_index >= 0 ? npc_definitions[state.active_npc_index].game_trigger
+                                             : world_map_config::npc_game_trigger::none;
 
         if(dialogue_box.is_question_open())
         {
@@ -47,7 +51,25 @@ namespace Game::world_map_dialog
             {
                 if(dialogue_box.question_index() == 0)
                 {
-                    return dialog_update_result::start_poker;
+                    if(active_trigger == world_map_config::npc_game_trigger::poker)
+                    {
+                        return dialog_update_result::start_poker;
+                    }
+
+                    if(active_trigger == world_map_config::npc_game_trigger::slots)
+                    {
+                        return dialog_update_result::start_slots;
+                    }
+
+                    if(active_trigger == world_map_config::npc_game_trigger::roulette)
+                    {
+                        return dialog_update_result::start_roulette;
+                    }
+
+                    if(active_trigger == world_map_config::npc_game_trigger::sports_betting)
+                    {
+                        return dialog_update_result::start_sports_betting;
+                    }
                 }
 
                 close_dialog(dialogue_box, state);
@@ -65,9 +87,21 @@ namespace Game::world_map_dialog
         {
             if(! dialogue_box.advance())
             {
-                if(state.active_npc_index == host_npc_index)
+                if(active_trigger == world_map_config::npc_game_trigger::poker)
                 {
                     dialogue_box.open_question("Start poker now?", "Yes", "No");
+                }
+                else if(active_trigger == world_map_config::npc_game_trigger::slots)
+                {
+                    dialogue_box.open_question("Play the slots?", "Yes", "No");
+                }
+                else if(active_trigger == world_map_config::npc_game_trigger::roulette)
+                {
+                    dialogue_box.open_question("Play roulette?", "Yes", "No");
+                }
+                else if(active_trigger == world_map_config::npc_game_trigger::sports_betting)
+                {
+                    dialogue_box.open_question("Bet on the match?", "Yes", "No");
                 }
                 else
                 {

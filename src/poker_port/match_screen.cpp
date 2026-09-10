@@ -42,23 +42,23 @@ namespace Game
         switch (card.get_suit())
         {
         case Poker::Suit::DIAMONDS:
-            card_sprite = bn::sprite_items::cards_diamond.create_sprite(card_sprite.x(), card_sprite.y());
+            card_sprite.set_item(bn::sprite_items::cards_diamond);
             card_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
             break;
         case Poker::Suit::HEARTS:
-            card_sprite = bn::sprite_items::cards_hearts.create_sprite(card_sprite.x(), card_sprite.y());
+            card_sprite.set_item(bn::sprite_items::cards_hearts);
             card_sprite.set_tiles(bn::sprite_items::cards_hearts.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
             break;
         case Poker::Suit::SPADES:
-            card_sprite = bn::sprite_items::cards_spades.create_sprite(card_sprite.x(), card_sprite.y());
+            card_sprite.set_item(bn::sprite_items::cards_spades);
             card_sprite.set_tiles(bn::sprite_items::cards_spades.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
             break;
         case Poker::Suit::CLUBS:
-            card_sprite = bn::sprite_items::cards_clubs.create_sprite(card_sprite.x(), card_sprite.y());
+            card_sprite.set_item(bn::sprite_items::cards_clubs);
             card_sprite.set_tiles(bn::sprite_items::cards_clubs.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
             break;
         default:
-            card_sprite = bn::sprite_items::card_back.create_sprite(card_sprite.x(), card_sprite.y());
+            card_sprite.set_item(bn::sprite_items::card_back);
             break;
         }
 
@@ -218,8 +218,6 @@ namespace Game
             switch (table_state)
             {
             case Poker::Table::State::PREFLOP:
-                deck.shuffle();
-
                 if (bn::keypad::b_pressed())
                 {
                     play = false;
@@ -248,6 +246,7 @@ namespace Game
                     ante_chip_sprite.set_visible(true);
 
                     // Deal pockets
+                    deck.shuffle();
                     table = Poker::Table(deck);
                     table.deal_pockets();
                     player_pocket = table.get_player_pocket();

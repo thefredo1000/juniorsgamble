@@ -11,7 +11,10 @@ namespace Game::world_map_dialog
     {
         no_dialog,
         continue_loop,
-        start_poker
+        start_poker,
+        start_slots,
+        start_roulette,
+        start_sports_betting
     };
 
     void begin_dialog(DialogueBox& dialogue_box,
@@ -20,9 +23,12 @@ namespace Game::world_map_dialog
 
     void close_dialog(DialogueBox& dialogue_box, world_map_state::runtime_state& state);
 
+    // Reads the active NPC's game_trigger (from npc_definitions[state.active_npc_index])
+    // to decide which yes/no question to ask once its dialog finishes, and which
+    // start_* result to return once the player confirms it.
     dialog_update_result update_dialog(DialogueBox& dialogue_box,
                                        world_map_state::runtime_state& state,
-                                       int host_npc_index);
+                                       const world_map_config::npc_definition* npc_definitions);
 }
 
 #endif

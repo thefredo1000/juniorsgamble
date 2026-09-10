@@ -15,6 +15,7 @@ namespace Game::world_map_state
         int remaining_move_x = 0;
         int remaining_move_y = 0;
         int step_cooldown = 0;
+        bool player_walking = false;
 
         bool can_interact = false;
 

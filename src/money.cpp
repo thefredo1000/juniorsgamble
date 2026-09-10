@@ -36,7 +36,6 @@ namespace Game
         cart_sram_data.format_tag = format_tag;
         cart_sram_data.money = amount;
 
-        bn::sram::clear(bn::sram::size());
         bn::sram::write(cart_sram_data);
     }
 }

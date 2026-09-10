@@ -46,4 +46,17 @@ namespace Game::world_map_player_visual
                 bn::sprite_items::junior.tiles_item().create_tiles(
                         world_map_logic::direction_standing_frame(new_direction)));
     }
+
+    void stop_walking(world_map_state::runtime_state& state,
+                      bn::sprite_ptr& junior_sprite,
+                      world_map_logic::direction facing_direction)
+    {
+        if(! state.player_walking)
+        {
+            return;
+        }
+
+        state.player_walking = false;
+        set_standing_frame(junior_sprite, facing_direction);
+    }
 }

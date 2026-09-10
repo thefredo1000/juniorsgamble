@@ -3,7 +3,16 @@
 
 namespace Game
 {
-    bool world_map_screen();
+    enum class world_map_result
+    {
+        none,
+        poker,
+        slots,
+        roulette,
+        sports_betting
+    };
+
+    world_map_result world_map_screen();
 }
 
 #endif

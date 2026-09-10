@@ -1,6 +1,6 @@
 #include "world_map_screen.h"
 
-#include "bn_affine_bg_ptr.h"
+#include "bn_camera_ptr.h"
 #include "bn_core.h"
 #include "bn_display.h"
 #include "bn_fixed_point.h"
@@ -11,7 +11,8 @@
 #include "bn_sprite_text_generator.h"
 #include "bn_vector.h"
 
-#include "bn_affine_bg_items_land.h"
+#include "bn_regular_bg_items_dream.h"
+#include "bn_regular_bg_ptr.h"
 #include "bn_sprite_items_junior.h"
 
 #include "common_variable_8x16_sprite_font.h"
@@ -71,6 +72,7 @@ namespace
         if(input_result == Game::world_map_movement::direction_input_result::turned)
         {
             Game::world_map_player_visual::set_standing_frame(junior_sprite, input_direction);
+            state.player_walking = false;
             return true;
         }
 
@@ -79,10 +81,19 @@ namespace
                                                  npc_definitions, npc_count,
                                                  local_solid_rects, local_solid_rect_count,
                                                  current_x, current_y);
+
+        // A refused step (map edge, NPC or solid tile) never advances the walk
+        // cycle, so the sprite would freeze on whatever mid-stride frame the
+        // animation left behind. Drop back to the standing frame instead.
+        if(! state.remaining_move_x && ! state.remaining_move_y)
+        {
+            Game::world_map_player_visual::stop_walking(state, junior_sprite, input_direction);
+        }
+
         return true;
     }
 
-    void apply_axis_motion(bn::affine_bg_ptr& land_bg,
+    void apply_axis_motion(bn::camera_ptr& camera,
                            runtime_state& state,
                            const Game::world_map_movement::axis_motion_result& axis_motion,
                            bool is_x_axis)
@@ -94,28 +105,26 @@ namespace
 
         if(is_x_axis)
         {
-            land_bg.set_pivot_x(land_bg.pivot_x() + axis_motion.signed_step);
+            camera.set_x(camera.x() + axis_motion.signed_step);
             if(axis_motion.reached_target)
             {
-                land_bg.set_pivot_x(state.target_pivot_x);
+                camera.set_x(state.target_pivot_x);
             }
             return;
         }
 
-        land_bg.set_pivot_y(land_bg.pivot_y() + axis_motion.signed_step);
+        camera.set_y(camera.y() + axis_motion.signed_step);
         if(axis_motion.reached_target)
         {
-            land_bg.set_pivot_y(state.target_pivot_y);
+            camera.set_y(state.target_pivot_y);
         }
     }
 }
 
 namespace Game
 {
-    bool world_map_screen()
+    world_map_result world_map_screen()
     {
-        constexpr int host_npc_index = 1;
-
         using world_map_config::move_speed;
         using world_map_config::npc_count;
         using world_map_config::npc_definition;
@@ -137,23 +146,24 @@ namespace Game
         hud_text_box.set_alignment(TextBox::alignment_type::LEFT)
                 .line(-112, -68, text::format<16>("Money: ${}", load_money()));
 
-        bn::affine_bg_ptr land_bg = bn::affine_bg_items::land.create_bg(0, 0);
-        land_bg.set_pivot_position(start_world_x, start_world_y);
+        bn::regular_bg_ptr map_bg = bn::regular_bg_items::dream.create_bg(0, 0);
+        bn::camera_ptr camera = bn::camera_ptr::create(start_world_x, start_world_y);
+        map_bg.set_camera(camera);
 
-        const int x_limit = (land_bg.dimensions().width() - bn::display::width()) / 2;
-        const int y_limit = (land_bg.dimensions().height() - bn::display::height()) / 2;
+        const int x_limit = (map_bg.dimensions().width() - bn::display::width()) / 2;
+        const int y_limit = (map_bg.dimensions().height() - bn::display::height()) / 2;
 
         bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(0, 0);
         bn::sprite_animate_action<4> junior_animate_action = bn::create_sprite_animate_action_forever(
                 junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
 
-        bn::vector<bn::sprite_ptr, 8> npc_sprites;
+        bn::vector<bn::sprite_ptr, world_map_config::npc_count> npc_sprites;
 
         for(int npc_index = 0; npc_index < npc_count; ++npc_index)
         {
             const npc_definition& npc = npc_definitions[npc_index];
-            bn::sprite_ptr npc_sprite = bn::sprite_items::junior.create_sprite(0, 0);
-            npc_sprite.set_tiles(bn::sprite_items::junior.tiles_item().create_tiles(npc.standing_frame));
+            bn::sprite_ptr npc_sprite = npc.sprite_item->create_sprite(0, 0);
+            npc_sprite.set_tiles(npc.sprite_item->tiles_item().create_tiles(npc.standing_frame));
             npc_sprites.push_back(bn::move(npc_sprite));
         }
 
@@ -168,7 +178,7 @@ namespace Game
         {
             const int npc_standing_frame = world_map_interaction::npc_dialog_facing_frame(state.facing_direction);
             npc_sprites[npc_index].set_tiles(
-                    bn::sprite_items::junior.tiles_item().create_tiles(npc_standing_frame));
+                    npc_definitions[npc_index].sprite_item->tiles_item().create_tiles(npc_standing_frame));
 
             world_map_interaction::begin_dialog_state(state, npc_index);
             world_map_dialog::begin_dialog(dialogue_box, npc_definitions, npc_index);
@@ -176,15 +186,26 @@ namespace Game
 
         while(true)
         {
-            world_map_npc_visual::sync_npc_sprites(npc_definitions, npc_count, land_bg, npc_sprites);
-
             const world_map_dialog::dialog_update_result dialog_result =
-                    world_map_dialog::update_dialog(dialogue_box, state, host_npc_index);
-            if(dialog_result == world_map_dialog::dialog_update_result::start_poker)
+                    world_map_dialog::update_dialog(dialogue_box, state, npc_definitions);
+            if(dialog_result == world_map_dialog::dialog_update_result::start_poker ||
+               dialog_result == world_map_dialog::dialog_update_result::start_slots ||
+               dialog_result == world_map_dialog::dialog_update_result::start_roulette ||
+               dialog_result == world_map_dialog::dialog_update_result::start_sports_betting)
             {
                 if(load_money() > 0)
                 {
-                    return true;
+                    switch(dialog_result)
+                    {
+                    case world_map_dialog::dialog_update_result::start_poker:
+                        return world_map_result::poker;
+                    case world_map_dialog::dialog_update_result::start_slots:
+                        return world_map_result::slots;
+                    case world_map_dialog::dialog_update_result::start_roulette:
+                        return world_map_result::roulette;
+                    default:
+                        return world_map_result::sports_betting;
+                    }
                 }
 
                 world_map_dialog::close_dialog(dialogue_box, state);
@@ -208,8 +229,8 @@ namespace Game
 
             if(! state.step_cooldown && ! (state.remaining_move_x || state.remaining_move_y))
             {
-                const int current_x = land_bg.pivot_x().right_shift_integer();
-                const int current_y = land_bg.pivot_y().right_shift_integer();
+                const int current_x = camera.x().right_shift_integer();
+                const int current_y = camera.y().right_shift_integer();
 
                 try_move_direction(state, direction::left, bn::keypad::left_held(), -tile_step, 0,
                                    x_limit, y_limit,
@@ -239,15 +260,26 @@ namespace Game
 
             const world_map_movement::axis_motion_result x_motion =
                     world_map_movement::update_axis_movement(state, true, move_speed, step_cooldown_frames);
-            apply_axis_motion(land_bg, state, x_motion, true);
+            apply_axis_motion(camera, state, x_motion, true);
 
             const world_map_movement::axis_motion_result y_motion =
                     world_map_movement::update_axis_movement(state, false, move_speed, step_cooldown_frames);
-            apply_axis_motion(land_bg, state, y_motion, false);
+            apply_axis_motion(camera, state, y_motion, false);
 
-            if(state.remaining_move_x || state.remaining_move_y)
+            world_map_npc_visual::sync_npc_sprites(npc_definitions, npc_count, camera, npc_sprites);
+
+            if(x_motion.has_step || y_motion.has_step)
             {
                 junior_animate_action.update();
+                state.player_walking = true;
+            }
+            else if(! (bn::keypad::left_held() || bn::keypad::right_held() ||
+                       bn::keypad::up_held() || bn::keypad::down_held()))
+            {
+                // Released the d-pad: the walk cycle stops advancing, so put him
+                // back on the standing frame. Frames between two held steps keep
+                // the walk pose, otherwise walking would stutter every tile.
+                world_map_player_visual::stop_walking(state, junior_sprite, state.facing_direction);
             }
 
             if(! bn::keypad::a_held() && ! bn::keypad::start_held())
@@ -270,7 +302,7 @@ namespace Game
 
             if(input::back_pressed())
             {
-                return false;
+                return world_map_result::none;
             }
 
             bn::core::update();

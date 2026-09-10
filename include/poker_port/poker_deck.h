@@ -1,3 +1,4 @@
+#include <bn_random.h>
 #include <bn_vector.h>
 
 #include "poker_card.h"
@@ -24,6 +25,7 @@ namespace Poker
     private:
         bn::vector<Card, 52> deck;
         int deckSize;
+        bn::random rng;
     };
 }
 #endif

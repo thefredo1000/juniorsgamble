@@ -16,6 +16,12 @@ namespace Game::world_map_player_visual
 
     void set_standing_frame(bn::sprite_ptr& junior_sprite,
                             world_map_logic::direction new_direction);
+
+    // Drops the player back to the standing frame if the walk cycle left him
+    // mid-stride. Does nothing when he is already standing.
+    void stop_walking(world_map_state::runtime_state& state,
+                      bn::sprite_ptr& junior_sprite,
+                      world_map_logic::direction facing_direction);
 }
 
 #endif

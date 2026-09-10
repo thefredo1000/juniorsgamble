@@ -40,10 +40,20 @@ namespace Game::world_map_movement
                         int current_x,
                         int current_y)
     {
-        const int destination_x = world_map_logic::clamp_int(state.target_pivot_x + delta_x, -x_limit, x_limit - 1);
-        const int destination_y = world_map_logic::clamp_int(state.target_pivot_y + delta_y, -y_limit, y_limit - 1);
+        const int destination_x = state.target_pivot_x + delta_x;
+        const int destination_y = state.target_pivot_y + delta_y;
 
         if(destination_x == state.target_pivot_x && destination_y == state.target_pivot_y)
+        {
+            return;
+        }
+
+        // Refuse steps that leave the map instead of clamping to the edge: the
+        // map limits are not multiples of tile_step, so clamping would drop the
+        // player off the tile grid and every grid-exact NPC collision check
+        // after that would miss.
+        if(destination_x < -x_limit || destination_x > x_limit - 1 ||
+           destination_y < -y_limit || destination_y > y_limit - 1)
         {
             return;
         }
