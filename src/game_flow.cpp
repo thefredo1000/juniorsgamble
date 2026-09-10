@@ -13,10 +13,7 @@
 
 #include "common_variable_8x16_sprite_font.h"
 #include "game_input.h"
-#include "poker_minigame.h"
-#include "roulette.h"
-#include "slot_machine.h"
-#include "sports_betting.h"
+#include "minigame.h"
 #include "text_box.h"
 #include "world_map_screen.h"
 
@@ -29,11 +26,7 @@ namespace
         START,
         MENU,
         COMING_SOON,
-        WORLD_MAP,
-        POKER,
-        SLOTS,
-        ROULETTE,
-        SPORTS_BETTING
+        WORLD_MAP
     };
 
     enum class MenuOption
@@ -156,30 +149,16 @@ namespace Game
                     break;
                 case FlowScene::WORLD_MAP:
                 {
-                    const world_map_result result = world_map_screen();
-                    scene = result == world_map_result::poker ? FlowScene::POKER :
-                            result == world_map_result::slots ? FlowScene::SLOTS :
-                            result == world_map_result::roulette ? FlowScene::ROULETTE :
-                            result == world_map_result::sports_betting ? FlowScene::SPORTS_BETTING :
-                            FlowScene::MENU;
+                    // The world map decides which game the player asked for; the
+                    // table knows how to run it.
+                    if(const minigame_definition* minigame = find_minigame(world_map_screen()))
+                    {
+                        minigame->run();
+                    }
+
+                    scene = FlowScene::MENU;
                     break;
                 }
-                case FlowScene::POKER:
-                    poker_run(false);
-                    scene = FlowScene::MENU;
-                    break;
-                case FlowScene::SLOTS:
-                    slot_machine_run();
-                    scene = FlowScene::MENU;
-                    break;
-                case FlowScene::ROULETTE:
-                    roulette_run();
-                    scene = FlowScene::MENU;
-                    break;
-                case FlowScene::SPORTS_BETTING:
-                    sports_betting_run();
-                    scene = FlowScene::MENU;
-                    break;
                 default:
                     scene = FlowScene::MENU;
                     break;

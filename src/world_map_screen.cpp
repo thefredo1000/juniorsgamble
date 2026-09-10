@@ -18,6 +18,7 @@
 #include "common_variable_8x16_sprite_font.h"
 #include "dialogue_box.h"
 #include "game_input.h"
+#include "minigame.h"
 #include "money.h"
 #include "text_box.h"
 #include "text_format.h"
@@ -123,7 +124,7 @@ namespace
 
 namespace Game
 {
-    world_map_result world_map_screen()
+    minigame_id world_map_screen()
     {
         using world_map_config::move_speed;
         using world_map_config::npc_count;
@@ -206,24 +207,11 @@ namespace Game
             {
                 end_npc_dialog(talking_npc_index);
             }
-            if(dialog_result == world_map_dialog::dialog_update_result::start_poker ||
-               dialog_result == world_map_dialog::dialog_update_result::start_slots ||
-               dialog_result == world_map_dialog::dialog_update_result::start_roulette ||
-               dialog_result == world_map_dialog::dialog_update_result::start_sports_betting)
+            if(dialog_result.status == world_map_dialog::dialog_status::start_minigame)
             {
                 if(load_money() > 0)
                 {
-                    switch(dialog_result)
-                    {
-                    case world_map_dialog::dialog_update_result::start_poker:
-                        return world_map_result::poker;
-                    case world_map_dialog::dialog_update_result::start_slots:
-                        return world_map_result::slots;
-                    case world_map_dialog::dialog_update_result::start_roulette:
-                        return world_map_result::roulette;
-                    default:
-                        return world_map_result::sports_betting;
-                    }
+                    return dialog_result.minigame;
                 }
 
                 world_map_dialog::close_dialog(dialogue_box, state);
@@ -238,7 +226,7 @@ namespace Game
                 continue;
             }
 
-            if(dialog_result == world_map_dialog::dialog_update_result::continue_loop)
+            if(dialog_result.status == world_map_dialog::dialog_status::continue_loop)
             {
                 continue;
             }
@@ -320,7 +308,7 @@ namespace Game
 
             if(input::back_pressed())
             {
-                return world_map_result::none;
+                return minigame_id::none;
             }
 
             bn::core::update();

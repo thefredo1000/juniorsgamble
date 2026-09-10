@@ -4,6 +4,7 @@
 #include "bn_keypad.h"
 
 #include "game_input.h"
+#include "minigame.h"
 
 namespace Game::world_map_dialog
 {
@@ -30,12 +31,13 @@ namespace Game::world_map_dialog
 
         if(! dialogue_box.is_open())
         {
-            return dialog_update_result::no_dialog;
+            return { dialog_status::no_dialog };
         }
 
-        const world_map_config::npc_game_trigger active_trigger =
+        const minigame_id active_trigger =
                 state.active_npc_index >= 0 ? npc_definitions[state.active_npc_index].game_trigger
-                                             : world_map_config::npc_game_trigger::none;
+                                            : minigame_id::none;
+        const minigame_definition* active_minigame = find_minigame(active_trigger);
 
         if(dialogue_box.is_question_open())
         {
@@ -49,27 +51,9 @@ namespace Game::world_map_dialog
             }
             else if(confirm_pressed)
             {
-                if(dialogue_box.question_index() == 0)
+                if(dialogue_box.question_index() == 0 && active_minigame)
                 {
-                    if(active_trigger == world_map_config::npc_game_trigger::poker)
-                    {
-                        return dialog_update_result::start_poker;
-                    }
-
-                    if(active_trigger == world_map_config::npc_game_trigger::slots)
-                    {
-                        return dialog_update_result::start_slots;
-                    }
-
-                    if(active_trigger == world_map_config::npc_game_trigger::roulette)
-                    {
-                        return dialog_update_result::start_roulette;
-                    }
-
-                    if(active_trigger == world_map_config::npc_game_trigger::sports_betting)
-                    {
-                        return dialog_update_result::start_sports_betting;
-                    }
+                    return { dialog_status::start_minigame, active_trigger };
                 }
 
                 close_dialog(dialogue_box, state);
@@ -80,28 +64,16 @@ namespace Game::world_map_dialog
             }
 
             bn::core::update();
-            return dialog_update_result::continue_loop;
+            return { dialog_status::continue_loop };
         }
 
         if(confirm_pressed)
         {
             if(! dialogue_box.advance())
             {
-                if(active_trigger == world_map_config::npc_game_trigger::poker)
+                if(active_minigame)
                 {
-                    dialogue_box.open_question("Start poker now?", "Yes", "No");
-                }
-                else if(active_trigger == world_map_config::npc_game_trigger::slots)
-                {
-                    dialogue_box.open_question("Play the slots?", "Yes", "No");
-                }
-                else if(active_trigger == world_map_config::npc_game_trigger::roulette)
-                {
-                    dialogue_box.open_question("Play roulette?", "Yes", "No");
-                }
-                else if(active_trigger == world_map_config::npc_game_trigger::sports_betting)
-                {
-                    dialogue_box.open_question("Bet on the match?", "Yes", "No");
+                    dialogue_box.open_question(active_minigame->question, "Yes", "No");
                 }
                 else
                 {
@@ -115,6 +87,6 @@ namespace Game::world_map_dialog
         }
 
         bn::core::update();
-        return dialog_update_result::continue_loop;
+        return { dialog_status::continue_loop };
     }
 }

@@ -4,6 +4,8 @@
 #include "bn_sprite_item.h"
 #include "bn_string_view.h"
 
+#include "minigame.h"
+
 #include "bn_sprite_items_bibi.h"
 #include "bn_sprite_items_croupier.h"
 #include "bn_sprite_items_excelsa.h"
@@ -24,17 +26,6 @@ namespace Game::world_map_config
     constexpr int start_world_x = 0;
     constexpr int start_world_y = 0;
 
-    // What talking to an NPC can offer to start, once its dialog lines
-    // finish and the player confirms the follow-up yes/no question.
-    enum class npc_game_trigger
-    {
-        none,
-        poker,
-        slots,
-        roulette,
-        sports_betting
-    };
-
     struct npc_definition
     {
         int world_x;
@@ -42,7 +33,9 @@ namespace Game::world_map_config
         int standing_frame;
         const bn::string_view* dialog_lines;
         int dialog_lines_count;
-        npc_game_trigger game_trigger = npc_game_trigger::none;
+        // What talking to this NPC offers to start, once its dialog lines finish
+        // and the player confirms the follow-up yes/no question.
+        minigame_id game_trigger = minigame_id::none;
 
         // Which graphic this NPC uses. Every character sheet is laid out like
         // junior.bmp (16x256, sixteen 16x16 frames), so any of them can be
@@ -144,45 +137,45 @@ namespace Game::world_map_config
     constexpr npc_definition npc_definitions[] = {
         { start_world_x + tile_step, start_world_y, 12, guide_dialog_lines,
           int(sizeof(guide_dialog_lines) / sizeof(guide_dialog_lines[0])),
-          npc_game_trigger::none },
+          minigame_id::none },
         { start_world_x - tile_step, start_world_y + tile_step, 8, host_dialog_lines,
           int(sizeof(host_dialog_lines) / sizeof(host_dialog_lines[0])),
-          npc_game_trigger::poker },
+          minigame_id::poker },
         { start_world_x + (tile_step * 2), start_world_y + tile_step, 4, traveler_dialog_lines,
           int(sizeof(traveler_dialog_lines) / sizeof(traveler_dialog_lines[0])),
-          npc_game_trigger::none },
+          minigame_id::none },
         { start_world_x + tile_step, start_world_y + (tile_step * 2), 0, slot_host_dialog_lines,
           int(sizeof(slot_host_dialog_lines) / sizeof(slot_host_dialog_lines[0])),
-          npc_game_trigger::slots },
+          minigame_id::slots },
         { start_world_x - (tile_step * 2), start_world_y, 8, roulette_host_dialog_lines,
           int(sizeof(roulette_host_dialog_lines) / sizeof(roulette_host_dialog_lines[0])),
-          npc_game_trigger::roulette },
+          minigame_id::roulette },
         { start_world_x - (tile_step * 2), start_world_y + tile_step, 4, sports_betting_host_dialog_lines,
           int(sizeof(sports_betting_host_dialog_lines) / sizeof(sports_betting_host_dialog_lines[0])),
-          npc_game_trigger::sports_betting },
+          minigame_id::sports_betting },
 
         // Sprite showcase row, two tiles above the player start.
         { start_world_x - (tile_step * 3), start_world_y - (tile_step * 2), 0, bibi_dialog_lines,
           int(sizeof(bibi_dialog_lines) / sizeof(bibi_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::bibi },
+          minigame_id::none, &bn::sprite_items::bibi },
         { start_world_x - (tile_step * 2), start_world_y - (tile_step * 2), 0, croupier_dialog_lines,
           int(sizeof(croupier_dialog_lines) / sizeof(croupier_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::croupier },
+          minigame_id::none, &bn::sprite_items::croupier },
         { start_world_x - tile_step, start_world_y - (tile_step * 2), 0, excelsa_dialog_lines,
           int(sizeof(excelsa_dialog_lines) / sizeof(excelsa_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::excelsa },
+          minigame_id::none, &bn::sprite_items::excelsa },
         { start_world_x, start_world_y - (tile_step * 2), 0, federica_dialog_lines,
           int(sizeof(federica_dialog_lines) / sizeof(federica_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::federica },
+          minigame_id::none, &bn::sprite_items::federica },
         { start_world_x + tile_step, start_world_y - (tile_step * 2), 0, ludovico_dialog_lines,
           int(sizeof(ludovico_dialog_lines) / sizeof(ludovico_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::ludovico },
+          minigame_id::none, &bn::sprite_items::ludovico },
         { start_world_x + (tile_step * 2), start_world_y - (tile_step * 2), 0, ludoviquito_dialog_lines,
           int(sizeof(ludoviquito_dialog_lines) / sizeof(ludoviquito_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::ludoviquito },
+          minigame_id::none, &bn::sprite_items::ludoviquito },
         { start_world_x + (tile_step * 3), start_world_y - (tile_step * 2), 0, ninja_dialog_lines,
           int(sizeof(ninja_dialog_lines) / sizeof(ninja_dialog_lines[0])),
-          npc_game_trigger::none, &bn::sprite_items::ninja }
+          minigame_id::none, &bn::sprite_items::ninja }
     };
 
     constexpr int npc_count = int(sizeof(npc_definitions) / sizeof(npc_definitions[0]));
