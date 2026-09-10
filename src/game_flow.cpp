@@ -13,7 +13,7 @@
 
 #include "common_variable_8x16_sprite_font.h"
 #include "game_input.h"
-#include "poker_minigame.h"
+#include "minigame.h"
 #include "text_box.h"
 #include "world_map_screen.h"
 
@@ -26,20 +26,17 @@ namespace
         START,
         MENU,
         COMING_SOON,
-        WORLD_MAP,
-        POKER
+        WORLD_MAP
     };
 
     enum class MenuOption
     {
-        POKER,
+        PLAY,
         COMING_SOON
     };
 
     void wait_for_start()
     {
-        bn::vector<bn::sprite_ptr, 32> text_sprites;
-
         while(! Game::input::confirm_pressed())
         {
             bn::core::update();
@@ -99,7 +96,7 @@ namespace
             }
             else if(Game::input::confirm_pressed())
             {
-                return selected_index == 0 ? MenuOption::POKER : MenuOption::COMING_SOON;
+                return selected_index == 0 ? MenuOption::PLAY : MenuOption::COMING_SOON;
             }
 
             bn::core::update();
@@ -143,7 +140,7 @@ namespace Game
                 case FlowScene::MENU:
                 {
                     const MenuOption option = run_menu_scene(text_generator);
-                    scene = option == MenuOption::POKER ? FlowScene::WORLD_MAP : FlowScene::COMING_SOON;
+                    scene = option == MenuOption::PLAY ? FlowScene::WORLD_MAP : FlowScene::COMING_SOON;
                     break;
                 }
                 case FlowScene::COMING_SOON:
@@ -151,12 +148,17 @@ namespace Game
                     scene = FlowScene::MENU;
                     break;
                 case FlowScene::WORLD_MAP:
-                    scene = world_map_screen() ? FlowScene::POKER : FlowScene::MENU;
-                    break;
-                case FlowScene::POKER:
-                    poker_run(false);
+                {
+                    // The world map decides which game the player asked for; the
+                    // table knows how to run it.
+                    if(const minigame_definition* minigame = find_minigame(world_map_screen()))
+                    {
+                        minigame->run();
+                    }
+
                     scene = FlowScene::MENU;
                     break;
+                }
                 default:
                     scene = FlowScene::MENU;
                     break;

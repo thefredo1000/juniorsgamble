@@ -6,14 +6,14 @@ namespace Game::world_map_npc_visual
 {
     void sync_npc_sprites(const world_map_config::npc_definition* npc_definitions,
                           int npc_count,
-                          const bn::affine_bg_ptr& land_bg,
-                          bn::vector<bn::sprite_ptr, 8>& npc_sprites)
+                          const bn::camera_ptr& camera,
+                          bn::vector<bn::sprite_ptr, world_map_config::npc_count>& npc_sprites)
     {
         for(int index = 0; index < npc_count; ++index)
         {
             const world_map_config::npc_definition& npc = npc_definitions[index];
-            const int npc_screen_x = npc.world_x - land_bg.pivot_x().right_shift_integer();
-            const int npc_screen_y = npc.world_y - land_bg.pivot_y().right_shift_integer();
+            const int npc_screen_x = npc.world_x - camera.x().right_shift_integer();
+            const int npc_screen_y = npc.world_y - camera.y().right_shift_integer();
 
             npc_sprites[index].set_position(npc_screen_x, npc_screen_y);
 

@@ -2,21 +2,6 @@
 
 namespace Game::world_map_logic
 {
-    int clamp_int(int value, int min_value, int max_value)
-    {
-        if(value < min_value)
-        {
-            return min_value;
-        }
-
-        if(value > max_value)
-        {
-            return max_value;
-        }
-
-        return value;
-    }
-
     bool point_inside_rect(int x, int y, const solid_rect& rect)
     {
         return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
@@ -48,10 +33,10 @@ namespace Game::world_map_logic
         return false;
     }
 
-    bn::point facing_tile(int pivot_x, int pivot_y, direction facing_direction, int tile_step)
+    bn::point facing_tile(int world_x, int world_y, direction facing_direction, int tile_step)
     {
-        int x = pivot_x;
-        int y = pivot_y;
+        int x = world_x;
+        int y = world_y;
 
         switch(facing_direction)
         {

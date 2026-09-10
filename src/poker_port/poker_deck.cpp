@@ -21,9 +21,7 @@ void Deck::shuffle()
 {
     for (int i = 0; i < 52; i++)
     {
-        bn::random rng = bn::random();
-        rng.update();
-        int j = rng.get_int(i + 1);
+        int j = this->rng.get_int(i + 1);
         Card temp = this->deck[i];
         this->deck[i] = this->deck[j];
         this->deck[j] = temp;

@@ -51,9 +51,9 @@ namespace Game
 
         // Set the ACE card for all suits
         diamond_cards_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
-        hearts_cards_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
-        spades_cards_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
-        clubs_cards_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
+        hearts_cards_sprite.set_tiles(bn::sprite_items::cards_hearts.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
+        spades_cards_sprite.set_tiles(bn::sprite_items::cards_spades.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
+        clubs_cards_sprite.set_tiles(bn::sprite_items::cards_clubs.tiles_item().create_tiles(static_cast<int>(Poker::Rank::ACE)));
 
         // Scale up the sprites
         diamond_cards_sprite.set_scale(1.4, 2);

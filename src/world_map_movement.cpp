@@ -40,10 +40,25 @@ namespace Game::world_map_movement
                         int current_x,
                         int current_y)
     {
-        const int destination_x = world_map_logic::clamp_int(state.target_pivot_x + delta_x, -x_limit, x_limit - 1);
-        const int destination_y = world_map_logic::clamp_int(state.target_pivot_y + delta_y, -y_limit, y_limit - 1);
+        const int destination_x = state.target_camera_x + delta_x;
+        const int destination_y = state.target_camera_y + delta_y;
 
-        if(destination_x == state.target_pivot_x && destination_y == state.target_pivot_y)
+        if(destination_x == state.target_camera_x && destination_y == state.target_camera_y)
+        {
+            return;
+        }
+
+        // Refuse steps that leave the map instead of clamping to the edge: the
+        // map limits are not multiples of tile_step, so clamping would drop the
+        // player off the tile grid and every grid-exact NPC collision check
+        // after that would miss.
+        //
+        // The limits are inclusive. At exactly +y_limit the bottom of the screen
+        // sits on the bottom of the map, which is a legal view; stopping one
+        // pixel short of it costs a whole tile_step of travel and leaves a strip
+        // of the background permanently unreachable.
+        if(destination_x < -x_limit || destination_x > x_limit ||
+           destination_y < -y_limit || destination_y > y_limit)
         {
             return;
         }
@@ -57,8 +72,8 @@ namespace Game::world_map_movement
             return;
         }
 
-        state.target_pivot_x = destination_x;
-        state.target_pivot_y = destination_y;
+        state.target_camera_x = destination_x;
+        state.target_camera_y = destination_y;
         state.remaining_move_x = destination_x - current_x;
         state.remaining_move_y = destination_y - current_y;
     }

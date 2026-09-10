@@ -4,6 +4,7 @@
 #include "bn_keypad.h"
 
 #include "game_input.h"
+#include "minigame.h"
 
 namespace Game::world_map_dialog
 {
@@ -24,14 +25,19 @@ namespace Game::world_map_dialog
 
     dialog_update_result update_dialog(DialogueBox& dialogue_box,
                                        world_map_state::runtime_state& state,
-                                       int host_npc_index)
+                                       const world_map_config::npc_definition* npc_definitions)
     {
         const bool confirm_pressed = Game::input::confirm_pressed();
 
         if(! dialogue_box.is_open())
         {
-            return dialog_update_result::no_dialog;
+            return { dialog_status::no_dialog };
         }
+
+        const minigame_id active_trigger =
+                state.active_npc_index >= 0 ? npc_definitions[state.active_npc_index].game_trigger
+                                            : minigame_id::none;
+        const minigame_definition* active_minigame = find_minigame(active_trigger);
 
         if(dialogue_box.is_question_open())
         {
@@ -45,9 +51,9 @@ namespace Game::world_map_dialog
             }
             else if(confirm_pressed)
             {
-                if(dialogue_box.question_index() == 0)
+                if(dialogue_box.question_index() == 0 && active_minigame)
                 {
-                    return dialog_update_result::start_poker;
+                    return { dialog_status::start_minigame, active_trigger };
                 }
 
                 close_dialog(dialogue_box, state);
@@ -58,16 +64,16 @@ namespace Game::world_map_dialog
             }
 
             bn::core::update();
-            return dialog_update_result::continue_loop;
+            return { dialog_status::continue_loop };
         }
 
         if(confirm_pressed)
         {
             if(! dialogue_box.advance())
             {
-                if(state.active_npc_index == host_npc_index)
+                if(active_minigame)
                 {
-                    dialogue_box.open_question("Start poker now?", "Yes", "No");
+                    dialogue_box.open_question(active_minigame->question, "Yes", "No");
                 }
                 else
                 {
@@ -81,6 +87,6 @@ namespace Game::world_map_dialog
         }
 
         bn::core::update();
-        return dialog_update_result::continue_loop;
+        return { dialog_status::continue_loop };
     }
 }
