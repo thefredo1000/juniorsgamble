@@ -36,11 +36,11 @@ namespace
     using Game::world_map_logic::solid_rect;
     using Game::world_map_state::runtime_state;
 
-    // Add world-space solid areas here to block movement.
+    // Add world-space solid areas here to block movement. There is deliberately
+    // no placeholder entry: point_inside_rect is inclusive, so a { 0, 0, 0, 0 }
+    // rect would make world tile (0, 0) solid, which is the player start tile.
+    constexpr const solid_rect* solid_rects = nullptr;
     constexpr int solid_rect_count = 0;
-    constexpr solid_rect solid_rects[] = {
-        { 0, 0, 0, 0 }
-    };
 
     bool try_move_direction(runtime_state& state,
                             direction input_direction,
@@ -56,7 +56,7 @@ namespace
                             int current_x,
                             int current_y,
                             bn::sprite_ptr& junior_sprite,
-                            bn::sprite_animate_action<4>& junior_animate_action)
+                            Game::world_map_player_visual::walk_animate_action& junior_animate_action)
     {
         const Game::world_map_movement::direction_input_result input_result =
                 Game::world_map_movement::process_direction_input(state, input_direction, held);
@@ -108,7 +108,7 @@ namespace
             camera.set_x(camera.x() + axis_motion.signed_step);
             if(axis_motion.reached_target)
             {
-                camera.set_x(state.target_pivot_x);
+                camera.set_x(state.target_camera_x);
             }
             return;
         }
@@ -116,7 +116,7 @@ namespace
         camera.set_y(camera.y() + axis_motion.signed_step);
         if(axis_motion.reached_target)
         {
-            camera.set_y(state.target_pivot_y);
+            camera.set_y(state.target_camera_y);
         }
     }
 }
@@ -134,6 +134,10 @@ namespace Game
         using world_map_config::step_cooldown_frames;
         using world_map_config::tile_step;
         using world_map_state::runtime_state;
+
+        // runtime_state starts out facing down; the sprite and its walk cycle
+        // have to agree with that.
+        constexpr direction state_facing_default = direction::down;
 
         bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
         text_generator.set_center_alignment();
@@ -153,23 +157,22 @@ namespace Game
         const int x_limit = (map_bg.dimensions().width() - bn::display::width()) / 2;
         const int y_limit = (map_bg.dimensions().height() - bn::display::height()) / 2;
 
-        bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(0, 0);
-        bn::sprite_animate_action<4> junior_animate_action = bn::create_sprite_animate_action_forever(
-                junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
+        bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(
+                0, 0, world_map_logic::direction_standing_frame(state_facing_default));
+        world_map_player_visual::walk_animate_action junior_animate_action =
+                world_map_player_visual::create_walk_animation(junior_sprite, state_facing_default);
 
         bn::vector<bn::sprite_ptr, world_map_config::npc_count> npc_sprites;
 
         for(int npc_index = 0; npc_index < npc_count; ++npc_index)
         {
             const npc_definition& npc = npc_definitions[npc_index];
-            bn::sprite_ptr npc_sprite = npc.sprite_item->create_sprite(0, 0);
-            npc_sprite.set_tiles(npc.sprite_item->tiles_item().create_tiles(npc.standing_frame));
-            npc_sprites.push_back(bn::move(npc_sprite));
+            npc_sprites.push_back(npc.sprite_item->create_sprite(0, 0, npc.standing_frame));
         }
 
         runtime_state state;
-        state.target_pivot_x = start_world_x;
-        state.target_pivot_y = start_world_y;
+        state.target_camera_x = start_world_x;
+        state.target_camera_y = start_world_y;
 
         bn::vector<bn::sprite_ptr, 96> dialog_sprites;
         DialogueBox dialogue_box(text_generator, dialog_sprites);
@@ -184,10 +187,25 @@ namespace Game
             world_map_dialog::begin_dialog(dialogue_box, npc_definitions, npc_index);
         };
 
+        auto end_npc_dialog = [&](int npc_index)
+        {
+            const npc_definition& npc = npc_definitions[npc_index];
+            npc_sprites[npc_index].set_tiles(npc.sprite_item->tiles_item().create_tiles(npc.standing_frame));
+        };
+
         while(true)
         {
+            // close_dialog() clears active_npc_index, so remember who was talking
+            // before the update to turn them back to their standing frame after.
+            const int talking_npc_index = state.active_npc_index;
+
             const world_map_dialog::dialog_update_result dialog_result =
                     world_map_dialog::update_dialog(dialogue_box, state, npc_definitions);
+
+            if(talking_npc_index >= 0 && state.active_npc_index < 0)
+            {
+                end_npc_dialog(talking_npc_index);
+            }
             if(dialog_result == world_map_dialog::dialog_update_result::start_poker ||
                dialog_result == world_map_dialog::dialog_update_result::start_slots ||
                dialog_result == world_map_dialog::dialog_update_result::start_roulette ||

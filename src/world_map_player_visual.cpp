@@ -4,10 +4,26 @@
 
 namespace Game::world_map_player_visual
 {
+    namespace
+    {
+        // Frames each walk frame is held for.
+        constexpr int walk_frame_wait = 4;
+    }
+
+    walk_animate_action create_walk_animation(bn::sprite_ptr& junior_sprite,
+                                              world_map_logic::direction new_direction)
+    {
+        const int first_frame = world_map_logic::direction_standing_frame(new_direction);
+
+        return bn::create_sprite_animate_action_forever(
+                junior_sprite, walk_frame_wait, bn::sprite_items::junior.tiles_item(),
+                first_frame, first_frame + 1, first_frame + 2, first_frame + 3);
+    }
+
     void update_walk_animation(world_map_state::runtime_state& state,
                                world_map_logic::direction new_direction,
                                bn::sprite_ptr& junior_sprite,
-                               bn::sprite_animate_action<4>& junior_animate_action)
+                               walk_animate_action& junior_animate_action)
     {
         if(state.animation_direction == new_direction)
         {
@@ -15,28 +31,7 @@ namespace Game::world_map_player_visual
         }
 
         state.animation_direction = new_direction;
-
-        switch(new_direction)
-        {
-            case world_map_logic::direction::left:
-                junior_animate_action = bn::create_sprite_animate_action_forever(
-                        junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 8, 9, 10, 11);
-                break;
-            case world_map_logic::direction::right:
-                junior_animate_action = bn::create_sprite_animate_action_forever(
-                        junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 12, 13, 14, 15);
-                break;
-            case world_map_logic::direction::up:
-                junior_animate_action = bn::create_sprite_animate_action_forever(
-                        junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 4, 5, 6, 7);
-                break;
-            case world_map_logic::direction::down:
-                junior_animate_action = bn::create_sprite_animate_action_forever(
-                        junior_sprite, 4, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
-                break;
-            default:
-                break;
-        }
+        junior_animate_action = create_walk_animation(junior_sprite, new_direction);
     }
 
     void set_standing_frame(bn::sprite_ptr& junior_sprite,

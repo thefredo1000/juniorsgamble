@@ -40,10 +40,10 @@ namespace Game::world_map_movement
                         int current_x,
                         int current_y)
     {
-        const int destination_x = state.target_pivot_x + delta_x;
-        const int destination_y = state.target_pivot_y + delta_y;
+        const int destination_x = state.target_camera_x + delta_x;
+        const int destination_y = state.target_camera_y + delta_y;
 
-        if(destination_x == state.target_pivot_x && destination_y == state.target_pivot_y)
+        if(destination_x == state.target_camera_x && destination_y == state.target_camera_y)
         {
             return;
         }
@@ -67,8 +67,8 @@ namespace Game::world_map_movement
             return;
         }
 
-        state.target_pivot_x = destination_x;
-        state.target_pivot_y = destination_y;
+        state.target_camera_x = destination_x;
+        state.target_camera_y = destination_y;
         state.remaining_move_x = destination_x - current_x;
         state.remaining_move_y = destination_y - current_y;
     }

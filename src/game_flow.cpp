@@ -38,14 +38,12 @@ namespace
 
     enum class MenuOption
     {
-        POKER,
+        PLAY,
         COMING_SOON
     };
 
     void wait_for_start()
     {
-        bn::vector<bn::sprite_ptr, 32> text_sprites;
-
         while(! Game::input::confirm_pressed())
         {
             bn::core::update();
@@ -105,7 +103,7 @@ namespace
             }
             else if(Game::input::confirm_pressed())
             {
-                return selected_index == 0 ? MenuOption::POKER : MenuOption::COMING_SOON;
+                return selected_index == 0 ? MenuOption::PLAY : MenuOption::COMING_SOON;
             }
 
             bn::core::update();
@@ -149,7 +147,7 @@ namespace Game
                 case FlowScene::MENU:
                 {
                     const MenuOption option = run_menu_scene(text_generator);
-                    scene = option == MenuOption::POKER ? FlowScene::WORLD_MAP : FlowScene::COMING_SOON;
+                    scene = option == MenuOption::PLAY ? FlowScene::WORLD_MAP : FlowScene::COMING_SOON;
                     break;
                 }
                 case FlowScene::COMING_SOON:
