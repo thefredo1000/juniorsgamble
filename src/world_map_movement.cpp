@@ -52,8 +52,13 @@ namespace Game::world_map_movement
         // map limits are not multiples of tile_step, so clamping would drop the
         // player off the tile grid and every grid-exact NPC collision check
         // after that would miss.
-        if(destination_x < -x_limit || destination_x > x_limit - 1 ||
-           destination_y < -y_limit || destination_y > y_limit - 1)
+        //
+        // The limits are inclusive. At exactly +y_limit the bottom of the screen
+        // sits on the bottom of the map, which is a legal view; stopping one
+        // pixel short of it costs a whole tile_step of travel and leaves a strip
+        // of the background permanently unreachable.
+        if(destination_x < -x_limit || destination_x > x_limit ||
+           destination_y < -y_limit || destination_y > y_limit)
         {
             return;
         }
