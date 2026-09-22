@@ -1,0 +1,75 @@
+World map layout -- edit this grid and hand it back.
+
+Every cell is one 16px step of the player. Coordinates are world pixels,
+centered on the map (the player starts the game at world 0,0 today):
+
+    world_x = -432 + (16 * col)     col 0..54
+    world_y =  -96 + (16 * row)     row 0..12
+
+The grid IS the walkable area: it stops where the white part of dream.bmp
+stops, so there is nothing outside it to stand on.
+
+Legend:
+    .   walkable tile
+    @   player start          col  0, row 6  -> world (-432, 0)
+    F   final NPC, skips the level
+                              col 54, row 6  -> world ( 432, 0)
+
+To place an NPC, overwrite a '.' with any other letter, and list the letter
+under NPCs below with whatever it should be. Notes worth knowing while you
+place them:
+
+  - An NPC tile is solid: the player cannot walk through it, he talks to it by
+    standing on an adjacent tile and facing it. So do not wall off the row 6
+    path from left to right unless you want the detour.
+  - The camera follows the player inside col 3..51 and row 3..9. Outside that
+    the view is frozen and the player walks toward the edge of the screen,
+    which is why @ and F sit at the far ends: both are reachable, both are seen
+    with the map edge against the screen edge.
+
+                0         10        20        30        40        50   
+                |         |         |         |         |         |    
+row  0  y= -96  .......................................................
+row  1  y= -80  ...............................D.......................
+row  2  y= -64  ......................U................................
+row  3  y= -48  ...............L........................D..............
+row  4  y= -32  ...D.......R..........R..........U.............D.......
+row  5  y= -16  .......................................................
+row  6  y=   0  @.....................................................F
+row  7  y=  16  .......................................................
+row  8  y=  32  ......U................................................
+row  9  y=  48  ............R.............R............U......D........
+row 10  y=  64  .......................................................
+row 11  y=  80  ...................R..............L....................
+row 12  y=  96  .......................................................
+
+NPCs
+----
+All of them are Junior sprites; the letter on the grid is the way each one
+faces. They are numbered left to right, the order the player meets them, and
+that is the order of npc_definitions in include/world_map_config.h. To write
+an interaction, edit the dialog array named here; two lines show per page.
+
+  #  tile          world        faces  dialog array                       role
+  1  col  3, row  4  ( -384, -32)   D     host_dialog_lines                  poker host
+  2  col  6, row  8  ( -336,  32)   U     slot_host_dialog_lines             slots host
+  3  col 11, row  4  ( -256, -32)   R     roulette_host_dialog_lines         roulette host
+  4  col 12, row  9  ( -240,  48)   R     sports_betting_host_dialog_lines   sports betting host
+  5  col 15, row  3  ( -192, -48)   L     npc_05_dialog_lines                free
+  6  col 19, row 11  ( -128,  80)   R     npc_06_dialog_lines                free
+  7  col 22, row  2  (  -80, -64)   U     npc_07_dialog_lines                free
+  8  col 22, row  4  (  -80, -32)   R     npc_08_dialog_lines                free
+  9  col 26, row  9  (  -16,  48)   R     npc_09_dialog_lines                free
+ 10  col 31, row  1  (   64, -80)   D     npc_10_dialog_lines                free
+ 11  col 33, row  4  (   96, -32)   U     npc_11_dialog_lines                free
+ 12  col 34, row 11  (  112,  80)   L     npc_12_dialog_lines                free
+ 13  col 39, row  9  (  192,  48)   U     npc_13_dialog_lines                free
+ 14  col 40, row  3  (  208, -48)   D     npc_14_dialog_lines                free
+ 15  col 46, row  9  (  304,  48)   D     npc_15_dialog_lines                free
+ 16  col 47, row  4  (  320, -32)   D     npc_16_dialog_lines                free
+ 17  col 54, row  6  (  432,   0)   L     final_npc_dialog_lines             skips the level
+
+The four hosts keep the minigames reachable; move those triggers onto whichever
+NPCs you want once you write the real cast (game_trigger in npc_definitions).
+NPC 17 is the one that leaves the map: it asks its question through the
+skips_level flag rather than a game_trigger.

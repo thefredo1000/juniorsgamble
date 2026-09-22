@@ -31,19 +31,17 @@ namespace Game::world_map_movement
     void try_start_move(world_map_state::runtime_state& state,
                         int delta_x,
                         int delta_y,
-                        int x_limit,
-                        int y_limit,
+                        int world_x_limit,
+                        int world_y_limit,
                         const world_map_config::npc_definition* npc_definitions,
                         int npc_count,
                         const world_map_logic::solid_rect* solid_rects,
-                        int solid_rect_count,
-                        int current_x,
-                        int current_y)
+                        int solid_rect_count)
     {
-        const int destination_x = state.target_camera_x + delta_x;
-        const int destination_y = state.target_camera_y + delta_y;
+        const int destination_x = state.target_world_x + delta_x;
+        const int destination_y = state.target_world_y + delta_y;
 
-        if(destination_x == state.target_camera_x && destination_y == state.target_camera_y)
+        if(destination_x == state.target_world_x && destination_y == state.target_world_y)
         {
             return;
         }
@@ -51,14 +49,13 @@ namespace Game::world_map_movement
         // Refuse steps that leave the map instead of clamping to the edge: the
         // map limits are not multiples of tile_step, so clamping would drop the
         // player off the tile grid and every grid-exact NPC collision check
-        // after that would miss.
+        // after that would miss. He stops on the last whole tile before the
+        // edge instead.
         //
-        // The limits are inclusive. At exactly +y_limit the bottom of the screen
-        // sits on the bottom of the map, which is a legal view; stopping one
-        // pixel short of it costs a whole tile_step of travel and leaves a strip
-        // of the background permanently unreachable.
-        if(destination_x < -x_limit || destination_x > x_limit ||
-           destination_y < -y_limit || destination_y > y_limit)
+        // The limits are inclusive: at exactly +world_x_limit the sprite's edge
+        // sits on the map's edge, which is still fully inside the map.
+        if(destination_x < -world_x_limit || destination_x > world_x_limit ||
+           destination_y < -world_y_limit || destination_y > world_y_limit)
         {
             return;
         }
@@ -72,40 +69,38 @@ namespace Game::world_map_movement
             return;
         }
 
-        state.target_camera_x = destination_x;
-        state.target_camera_y = destination_y;
-        state.remaining_move_x = destination_x - current_x;
-        state.remaining_move_y = destination_y - current_y;
+        state.target_world_x = destination_x;
+        state.target_world_y = destination_y;
+        state.remaining_move_x = destination_x - state.world_x;
+        state.remaining_move_y = destination_y - state.world_y;
     }
 
-    axis_motion_result update_axis_movement(world_map_state::runtime_state& state,
-                                            bool is_x_axis,
-                                            int move_speed,
-                                            int step_cooldown_frames)
+    bool update_axis_movement(world_map_state::runtime_state& state,
+                              bool is_x_axis,
+                              int move_speed,
+                              int step_cooldown_frames)
     {
         int& remaining_axis = is_x_axis ? state.remaining_move_x : state.remaining_move_y;
 
         if(! remaining_axis)
         {
-            return {};
+            return false;
         }
+
+        int& position_axis = is_x_axis ? state.world_x : state.world_y;
 
         const int abs_remaining = remaining_axis > 0 ? remaining_axis : -remaining_axis;
         const int axis_step = abs_remaining < move_speed ? abs_remaining : move_speed;
         const int signed_step = remaining_axis > 0 ? axis_step : -axis_step;
 
         remaining_axis -= signed_step;
+        position_axis += signed_step;
 
-        axis_motion_result result;
-        result.signed_step = signed_step;
-        result.has_step = true;
-        result.reached_target = ! remaining_axis;
-
-        if(result.reached_target && ! state.remaining_move_x && ! state.remaining_move_y)
+        if(! state.remaining_move_x && ! state.remaining_move_y)
         {
             state.step_cooldown = step_cooldown_frames;
         }
 
-        return result;
+        return true;
     }
 }

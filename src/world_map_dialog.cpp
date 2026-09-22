@@ -38,6 +38,8 @@ namespace Game::world_map_dialog
                 state.active_npc_index >= 0 ? npc_definitions[state.active_npc_index].game_trigger
                                             : minigame_id::none;
         const minigame_definition* active_minigame = find_minigame(active_trigger);
+        const bool active_skips_level =
+                state.active_npc_index >= 0 && npc_definitions[state.active_npc_index].skips_level;
 
         if(dialogue_box.is_question_open())
         {
@@ -51,9 +53,17 @@ namespace Game::world_map_dialog
             }
             else if(confirm_pressed)
             {
-                if(dialogue_box.question_index() == 0 && active_minigame)
+                if(dialogue_box.question_index() == 0)
                 {
-                    return { dialog_status::start_minigame, active_trigger };
+                    if(active_minigame)
+                    {
+                        return { dialog_status::start_minigame, active_trigger };
+                    }
+
+                    if(active_skips_level)
+                    {
+                        return { dialog_status::skip_level };
+                    }
                 }
 
                 close_dialog(dialogue_box, state);
@@ -74,6 +84,10 @@ namespace Game::world_map_dialog
                 if(active_minigame)
                 {
                     dialogue_box.open_question(active_minigame->question, "Yes", "No");
+                }
+                else if(active_skips_level)
+                {
+                    dialogue_box.open_question(world_map_config::skip_level_question, "Yes", "No");
                 }
                 else
                 {

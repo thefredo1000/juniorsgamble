@@ -14,13 +14,6 @@ namespace Game::world_map_movement
         move_attempt
     };
 
-    struct axis_motion_result
-    {
-        int signed_step = 0;
-        bool has_step = false;
-        bool reached_target = false;
-    };
-
     void tick_cooldown(world_map_state::runtime_state& state);
 
     direction_input_result process_direction_input(world_map_state::runtime_state& state,
@@ -30,19 +23,19 @@ namespace Game::world_map_movement
     void try_start_move(world_map_state::runtime_state& state,
                         int delta_x,
                         int delta_y,
-                        int x_limit,
-                        int y_limit,
+                        int world_x_limit,
+                        int world_y_limit,
                         const world_map_config::npc_definition* npc_definitions,
                         int npc_count,
                         const world_map_logic::solid_rect* solid_rects,
-                        int solid_rect_count,
-                        int current_x,
-                        int current_y);
+                        int solid_rect_count);
 
-    axis_motion_result update_axis_movement(world_map_state::runtime_state& state,
-                                            bool is_x_axis,
-                                            int move_speed,
-                                            int step_cooldown_frames);
+    // Advances one axis of the current step, moving the player. Returns whether
+    // it moved this frame, which is what drives the walk animation.
+    bool update_axis_movement(world_map_state::runtime_state& state,
+                              bool is_x_axis,
+                              int move_speed,
+                              int step_cooldown_frames);
 }
 
 #endif

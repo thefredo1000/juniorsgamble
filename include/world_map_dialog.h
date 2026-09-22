@@ -11,7 +11,8 @@ namespace Game::world_map_dialog
     {
         no_dialog,
         continue_loop,
-        start_minigame
+        start_minigame,
+        skip_level
     };
 
     struct dialog_update_result
@@ -30,7 +31,8 @@ namespace Game::world_map_dialog
 
     // Reads the active NPC's game_trigger (from npc_definitions[state.active_npc_index])
     // and looks its question up in the minigame table, so a new game needs no
-    // change here at all.
+    // change here at all. An NPC flagged skips_level asks its own question
+    // instead and answering yes ends the map.
     dialog_update_result update_dialog(DialogueBox& dialogue_box,
                                        world_map_state::runtime_state& state,
                                        const world_map_config::npc_definition* npc_definitions);

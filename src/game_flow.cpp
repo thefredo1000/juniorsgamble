@@ -103,6 +103,22 @@ namespace
         }
     }
 
+    void run_level_skipped_scene(bn::sprite_text_generator& text_generator)
+    {
+        bn::regular_bg_ptr info_background = bn::regular_bg_items::juniors.create_bg(8, 48);
+        info_background.set_blending_enabled(false);
+
+        bn::vector<bn::sprite_ptr, 32> info_sprites;
+        Game::TextBox(text_generator, info_sprites)
+                .set_alignment(Game::TextBox::alignment_type::CENTER)
+                .line(0, 44, "Level skipped");
+
+        while(! Game::input::confirm_pressed() && ! Game::input::back_pressed())
+        {
+            bn::core::update();
+        }
+    }
+
     void run_coming_soon_scene(bn::sprite_text_generator& text_generator)
     {
         bn::regular_bg_ptr info_background = bn::regular_bg_items::juniors.create_bg(8, 48);
@@ -149,11 +165,23 @@ namespace Game
                     break;
                 case FlowScene::WORLD_MAP:
                 {
-                    // The world map decides which game the player asked for; the
-                    // table knows how to run it.
-                    if(const minigame_definition* minigame = find_minigame(world_map_screen()))
+                    // The world map decides what the player asked for; the table
+                    // knows how to run a game.
+                    const world_map_result result = world_map_screen();
+
+                    if(result.outcome == world_map_outcome::start_minigame)
                     {
-                        minigame->run();
+                        if(const minigame_definition* minigame = find_minigame(result.minigame))
+                        {
+                            minigame->run();
+                        }
+                    }
+                    else if(result.outcome == world_map_outcome::skip_level)
+                    {
+                        // Placeholder: there is only the one map so far, so
+                        // skipping it lands back in the menu. The next level
+                        // goes here.
+                        run_level_skipped_scene(text_generator);
                     }
 
                     scene = FlowScene::MENU;

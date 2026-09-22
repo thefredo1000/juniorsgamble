@@ -25,7 +25,7 @@ namespace Game::world_map_interaction
                          int tile_step)
     {
         const bn::point front_tile = world_map_logic::facing_tile(
-                state.target_camera_x, state.target_camera_y, state.facing_direction, tile_step);
+                state.target_world_x, state.target_world_y, state.facing_direction, tile_step);
         return npc_index_at(npc_definitions, npc_count, front_tile.x(), front_tile.y());
     }
 
