@@ -23,6 +23,7 @@ namespace Game
     struct minigame_definition
     {
         minigame_id id;
+        bn::string_view menu_label;
 
         // Yes/no prompt the NPC asks once its dialog lines run out.
         bn::string_view question;
@@ -34,6 +35,8 @@ namespace Game
     // Returns nullptr for minigame_id::none, so callers can treat "the player
     // declined" and "this NPC starts nothing" as the same case.
     [[nodiscard]] const minigame_definition* find_minigame(minigame_id id);
+    [[nodiscard]] int minigame_count();
+    [[nodiscard]] const minigame_definition& minigame_at(int index);
 }
 
 #endif // MINIGAME_H

@@ -1,6 +1,9 @@
 #include "world_map_screen.h"
 
 #include "bn_algorithm.h"
+#include "bn_blending.h"
+#include "bn_bgs_mosaic.h"
+#include "bn_bgs_mosaic_actions.h"
 #include "bn_camera_ptr.h"
 #include "bn_core.h"
 #include "bn_display.h"
@@ -8,6 +11,8 @@
 #include "bn_keypad.h"
 #include "bn_point.h"
 #include "bn_sprite_animate_actions.h"
+#include "bn_sprites_mosaic.h"
+#include "bn_sprites_mosaic_actions.h"
 #include "bn_sprite_ptr.h"
 #include "bn_sprite_text_generator.h"
 #include "bn_vector.h"
@@ -37,6 +42,181 @@ namespace
     using Game::world_map_logic::direction;
     using Game::world_map_logic::solid_rect;
     using Game::world_map_state::runtime_state;
+
+    constexpr direction dream_intro_spin_directions[] = {
+        direction::down,
+        direction::right,
+        direction::up,
+        direction::left,
+    };
+
+    void wait_for_intro_input_release()
+    {
+        while(bn::keypad::a_held() || bn::keypad::start_held() || bn::keypad::b_held())
+        {
+            bn::core::update();
+        }
+    }
+
+    [[nodiscard]] bn::string_view intro_notice_line_1_for(const Game::run_save_data& save_data)
+    {
+        return save_data.stage == Game::story_stage::casino ?
+                       "I have to save my family." : Game::world_map_config::intro_notice_line_1;
+    }
+
+    [[nodiscard]] bn::string_view intro_notice_line_2_for(const Game::run_save_data& save_data)
+    {
+        return save_data.stage == Game::story_stage::casino ?
+                       "Time to win at the casino." : Game::world_map_config::intro_notice_line_2;
+    }
+
+    void run_intro_dialogue(Game::DialogueBox& dialogue_box, const Game::run_save_data& save_data)
+    {
+        wait_for_intro_input_release();
+
+        if(save_data.stage == Game::story_stage::dream)
+        {
+            constexpr bn::string_view intro_dialog_lines[] = {
+                Game::world_map_config::intro_notice_line_1,
+                Game::world_map_config::intro_notice_line_2
+            };
+
+            dialogue_box.open(intro_dialog_lines, 2);
+        }
+        else
+        {
+            dialogue_box.open_notice(intro_notice_line_1_for(save_data),
+                                     intro_notice_line_2_for(save_data));
+        }
+
+        wait_for_intro_input_release();
+
+        while(dialogue_box.is_open())
+        {
+            dialogue_box.tick();
+
+            if(Game::input::confirm_pressed())
+            {
+                if(! dialogue_box.advance())
+                {
+                    dialogue_box.close();
+                }
+            }
+            else if(Game::input::back_pressed())
+            {
+                dialogue_box.close();
+            }
+
+            bn::core::update();
+        }
+    }
+
+    void run_dream_intro_cinematic(bn::regular_bg_ptr& map_bg,
+                                   bn::sprite_ptr& junior_sprite,
+                                   bn::ivector<bn::sprite_ptr>& npc_sprites,
+                                   runtime_state& state)
+    {
+        constexpr int intro_frames = 88;
+        constexpr int deblur_frames = 40;
+        constexpr int fade_frames = 16;
+        constexpr int fall_start_frame = 12;
+        constexpr int spin_hold_frames = 4;
+        constexpr int settle_frames = 8;
+        constexpr int offscreen_y = -96;
+        constexpr bn::fixed blur_stretch = 1;
+        constexpr bn::fixed start_scale = 2;
+        constexpr bn::fixed end_scale = 1;
+
+        bn::bgs_mosaic::set_stretch(blur_stretch);
+        bn::sprites_mosaic::set_stretch(blur_stretch);
+        map_bg.set_mosaic_enabled(true);
+        map_bg.set_blending_enabled(true);
+        junior_sprite.set_mosaic_enabled(true);
+        junior_sprite.set_blending_enabled(true);
+        junior_sprite.set_visible(false);
+        junior_sprite.set_scale(start_scale);
+        junior_sprite.set_position(state.world_x, offscreen_y);
+
+        for(bn::sprite_ptr& npc_sprite : npc_sprites)
+        {
+            npc_sprite.set_mosaic_enabled(true);
+            npc_sprite.set_blending_enabled(true);
+        }
+
+        bn::blending::set_black_fade_color();
+        bn::blending::set_fade_alpha(1);
+
+        wait_for_intro_input_release();
+
+        bn::bgs_mosaic_stretch_to_action deblur_action(deblur_frames, 0);
+        bn::sprites_mosaic_stretch_to_action sprite_deblur_action(deblur_frames, 0);
+
+        for(int frame = 0; frame < intro_frames; ++frame)
+        {
+            if(frame < fade_frames)
+            {
+                bn::blending::set_fade_alpha(bn::fixed(fade_frames - frame - 1) / fade_frames);
+            }
+
+            if(frame < deblur_frames)
+            {
+                deblur_action.update();
+                sprite_deblur_action.update();
+            }
+
+            if(frame == fall_start_frame)
+            {
+                junior_sprite.set_visible(true);
+            }
+
+            if(junior_sprite.visible())
+            {
+                const int fall_frame = frame - fall_start_frame;
+                const int fall_frames = intro_frames - fall_start_frame;
+                const bn::fixed progress = bn::fixed(fall_frame) / fall_frames;
+                const bn::fixed eased_progress = progress * progress;
+                const int junior_y = offscreen_y + int((state.world_y - offscreen_y) * eased_progress);
+                const bn::fixed scale = start_scale - ((start_scale - end_scale) * progress);
+                const int spin_index = (fall_frame / spin_hold_frames) % int(sizeof(dream_intro_spin_directions) /
+                                                                              sizeof(dream_intro_spin_directions[0]));
+                const direction spin_direction = fall_frame >= fall_frames - settle_frames ?
+                                                        direction::down : dream_intro_spin_directions[spin_index];
+
+                junior_sprite.set_y(junior_y);
+                junior_sprite.set_scale(scale);
+                Game::world_map_player_visual::set_standing_frame(junior_sprite, spin_direction);
+                state.facing_direction = spin_direction;
+                state.animation_direction = spin_direction;
+            }
+
+            bn::core::update();
+        }
+
+        junior_sprite.set_scale(end_scale);
+        junior_sprite.set_position(state.world_x, state.world_y);
+
+        bn::blending::set_fade_alpha(0);
+        bn::bgs_mosaic::set_stretch(0);
+        bn::sprites_mosaic::set_stretch(0);
+        map_bg.set_mosaic_enabled(false);
+        map_bg.set_blending_enabled(false);
+        junior_sprite.set_mosaic_enabled(false);
+        junior_sprite.set_blending_enabled(false);
+
+        for(bn::sprite_ptr& npc_sprite : npc_sprites)
+        {
+            npc_sprite.set_mosaic_enabled(false);
+            npc_sprite.set_blending_enabled(false);
+        }
+
+        junior_sprite.set_scale(end_scale);
+        junior_sprite.set_position(state.world_x, state.world_y);
+        Game::world_map_player_visual::set_standing_frame(junior_sprite, direction::down);
+        state.facing_direction = direction::down;
+        state.animation_direction = direction::down;
+
+        wait_for_intro_input_release();
+    }
 
     // Add world-space solid areas here to block movement. There is deliberately
     // no placeholder entry: point_inside_rect is inclusive, so a { 0, 0, 0, 0 }
@@ -132,11 +312,10 @@ namespace Game
 
         bn::vector<bn::sprite_ptr, 64> hud_sprites;
         TextBox hud_text_box(text_generator, hud_sprites);
-        hud_text_box.set_alignment(TextBox::alignment_type::CENTER)
-                .line(0, -68, "World map");
+        const run_save_data save_data = load_run_save();
 
         hud_text_box.set_alignment(TextBox::alignment_type::LEFT)
-                .line(-112, -68, text::format<16>("Money: ${}", load_money()));
+            .line(-112, -68, text::format<16>("Money: ${}", save_data.money));
 
         bn::regular_bg_ptr map_bg = bn::regular_bg_items::dream.create_bg(0, 0);
         bn::camera_ptr camera = bn::camera_ptr::create(start_world_x, start_world_y);
@@ -179,25 +358,27 @@ namespace Game
 
         follow_player(camera, state, camera_x_limit, camera_y_limit);
         junior_sprite.set_position(state.world_x, state.world_y);
+        world_map_npc_visual::sync_npc_sprites(npc_definitions, npc_count, camera, npc_sprites);
 
         bn::vector<bn::sprite_ptr, 96> dialog_sprites;
         DialogueBox dialogue_box(text_generator, dialog_sprites);
 
-        dialogue_box.open_notice(world_map_config::intro_notice_line_1,
-                                 world_map_config::intro_notice_line_2);
-
-        while(dialogue_box.is_open())
+        if(save_data.stage == story_stage::dream)
         {
-            dialogue_box.tick();
-
-            if(input::confirm_pressed() || input::back_pressed())
+            for(bn::sprite_ptr& hud_sprite : hud_sprites)
             {
-                dialogue_box.close();
-                break;
+                hud_sprite.set_visible(false);
             }
 
-            bn::core::update();
+            run_dream_intro_cinematic(map_bg, junior_sprite, npc_sprites, state);
+
+            for(bn::sprite_ptr& hud_sprite : hud_sprites)
+            {
+                hud_sprite.set_visible(true);
+            }
         }
+
+        run_intro_dialogue(dialogue_box, save_data);
 
         auto start_npc_dialog = [&](int npc_index)
         {

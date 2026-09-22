@@ -4,24 +4,30 @@ This project is a Butano-based GBA game that now combines:
 
 - Intro screen
 - Main menu
-- World map exploration
+- Dream checkpoint scene
+- Casino story menu
+- Minigames submenu
+- World map exploration/debug scene
 - NPC conversation system
-- Poker minigame entry through host dialog
+- Save-backed story progression
 
 The recent work focused on gameplay flow, world map behavior, and architecture refactoring so systems are easier to maintain.
 
 ## Current Scene Flow
 
-1. Intro scene
-2. Menu scene
-3. World map scene
-4. Poker minigame (only after host dialog question is accepted)
-5. Back flow to menu/world map according to scene logic
+1. Title screen
+2. Main menu with `Start new game`, `Continue`, `Minigames`, and `Config & extras`
+3. Story flow routed by autosave stage:
+4. Dream checkpoint scene on a new run
+5. Casino story menu during the rescue phase
+6. Story completion screen after the family is saved
+7. Separate minigames submenu with all games available immediately
+8. World map remains available as a debug entry from the title screen (`A`)
 
 ## Controls
 
 - D-Pad: Move on world map (tile-by-tile movement)
-- A: Talk/interact (must face NPC)
+- A: Confirm/select, and talk/interact on the world map
 - B: Back/cancel (scene-specific)
 - START: Confirm in shared input helper where supported
 
@@ -32,7 +38,7 @@ The recent work focused on gameplay flow, world map behavior, and architecture r
 - If blocked by NPC/solid area, character turns but does not move.
 - NPC interaction happens with the tile directly in front of the player.
 - NPC rotates to face player when dialog starts.
-- Poker no longer starts with START shortcut on map; it is gated by talking to host NPC and completing question flow.
+- New game starts in the dream world map, and Continue resumes the story from its current point; minigames remain an explicit menu choice instead of the default story route.
 
 ## Refactored Module Structure
 
@@ -44,7 +50,7 @@ The recent work focused on gameplay flow, world map behavior, and architecture r
 Responsibilities:
 
 - Owns scene state machine transitions.
-- Runs intro, menu, world map, and poker transitions.
+- Runs title, main menu, dream checkpoint, casino story menu, world map, and minigame transitions.
 
 ### Input abstraction
 

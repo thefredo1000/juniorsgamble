@@ -17,18 +17,18 @@ namespace Game
         }
 
         constexpr minigame_definition minigames[] = {
-            { minigame_id::poker,          "Start poker now?",   run_poker },
-            { minigame_id::slots,          "Play the slots?",    slot_machine_run },
-            { minigame_id::roulette,       "Play roulette?",     roulette_run },
-            { minigame_id::sports_betting, "Bet on the match?",  sports_betting_run }
+            { minigame_id::poker,          "Poker",            "Start poker now?",   run_poker },
+            { minigame_id::slots,          "Slots",            "Play the slots?",    slot_machine_run },
+            { minigame_id::roulette,       "Roulette",         "Play roulette?",     roulette_run },
+            { minigame_id::sports_betting, "Sports betting",   "Bet on the match?",  sports_betting_run }
         };
 
-        constexpr int minigame_count = int(sizeof(minigames) / sizeof(minigames[0]));
+        constexpr int registered_minigame_count = int(sizeof(minigames) / sizeof(minigames[0]));
     }
 
     const minigame_definition* find_minigame(minigame_id id)
     {
-        for(int index = 0; index < minigame_count; ++index)
+        for(int index = 0; index < registered_minigame_count; ++index)
         {
             if(minigames[index].id == id)
             {
@@ -37,5 +37,15 @@ namespace Game
         }
 
         return nullptr;
+    }
+
+    int minigame_count()
+    {
+        return registered_minigame_count;
+    }
+
+    const minigame_definition& minigame_at(int index)
+    {
+        return minigames[index];
     }
 }
