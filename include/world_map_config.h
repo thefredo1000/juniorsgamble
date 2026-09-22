@@ -6,8 +6,6 @@
 #include "bn_sprite_item.h"
 #include "bn_string_view.h"
 
-#include "minigame.h"
-
 #include "bn_sprite_items_bibi.h"
 #include "bn_sprite_items_croupier.h"
 #include "bn_sprite_items_excelsa.h"
@@ -19,6 +17,9 @@
 
 namespace Game::world_map_config
 {
+    constexpr bn::string_view intro_notice_line_1 = "Where am I?";
+    constexpr bn::string_view intro_notice_line_2 = "Am I dreaming?";
+
     constexpr int tile_step = 16;
     constexpr int move_speed = 1;
     constexpr int step_cooldown_frames = 2;
@@ -66,13 +67,8 @@ namespace Game::world_map_config
       uint8_t standing_frame;
       uint8_t dialog_lines_count;
 
-        // What talking to this NPC offers to start, once its dialog lines finish
-        // and the player confirms the follow-up yes/no question.
-        minigame_id game_trigger = minigame_id::none;
-
         // Saying yes to this NPC's question leaves the world map instead of
-        // starting a game. Only the NPC at the end of the path uses it, and an
-        // NPC is either a game host or the way out, never both.
+        // entering the next view. Only the NPC at the end of the path uses it.
         bool skips_level = false;
     };
 
@@ -90,7 +86,6 @@ namespace Game::world_map_config
         int standing_frame,
         const bn::string_view* dialog_lines,
         uint8_t dialog_lines_count,
-        minigame_id game_trigger = minigame_id::none,
         const bn::sprite_item* sprite_item = &bn::sprite_items::junior,
         bool skips_level = false)
     {
@@ -101,113 +96,113 @@ namespace Game::world_map_config
         static_cast<int16_t>(world_y),
         static_cast<uint8_t>(standing_frame),
         dialog_lines_count,
-        game_trigger,
         skips_level
       };
     }
 
-    // What the last NPC asks, the way a minigame host asks its own question.
-    constexpr bn::string_view skip_level_question = "Skip this level?";
+    // What the last NPC asks before handing control to the next view.
+    constexpr bn::string_view skip_level_question = "Wake up and move on?";
 
     constexpr bn::string_view host_dialog_lines[] = {
-        "Hello, my name is Junior P. Luche!",
+        "Hi my name is Junior P. Luche!",
+        "I can't find my Peluchemon cards,",
+        "this place is strange...",
         "",
-        "I'm the dealer here!",
-        "Hold on... you look a lot like me.",
     };
 
     constexpr bn::string_view slot_host_dialog_lines[] = {
-        "Hey there, care to try your luck?",
-        "",
-        "I run the slot machine over here.",
-        "Line up three of a kind to win big!",
+        "Hi, you look just like me!",
+        "There's this guy at the end,",
+        "better talk to him, he knows what's",
+        "going on.",
     };
 
     constexpr bn::string_view roulette_host_dialog_lines[] = {
-        "Welcome to the roulette table!",
+        "Why are mom and dad always",
+        "screaming in their rooms?",
+        "I wonder, what are they up to?",
         "",
-        "Red, black, odds, or a single number...",
-        "Where does your luck lie?",
     };
 
     constexpr bn::string_view sports_betting_host_dialog_lines[] = {
-        "Hey! Cruz Azul plays today!",
-        "",
-        "I take bets on how the match goes.",
-        "Win, lose, or draw, it's your call!",
+        "Am I hallucinating again?",
+        "The other day I ate shoe polish...",
+        "and my father told me that I was",
+        "saying a bunch of nonsense.",
     };
 
     // ---------------------------------------------------------------------
-    // Everyone else on the path. The lines are placeholders: two of them show
-    // per page, so write as many pairs as the conversation needs. Give an NPC
-    // a game_trigger to have it offer a minigame once its lines run out.
+    // Everyone else on the path. The lines are short prompts that keep the
+    // player moving toward the final NPC on the right.
     // ---------------------------------------------------------------------
 
     constexpr bn::string_view npc_05_dialog_lines[] = {
-        "NPC 5 here.",
-        "Write my lines here.",
+        "Hey, are you my brother?",
+        "I always dreamed of finding you!",
     };
 
     constexpr bn::string_view npc_06_dialog_lines[] = {
-        "NPC 6 here.",
-        "Write my lines here.",
+        "Hey handsome!!!",
+        "Go talk to the man at the end.",
     };
 
     constexpr bn::string_view npc_07_dialog_lines[] = {
-        "NPC 7 here.",
-        "Write my lines here.",
+        "Pozoleeeeee...",
+        "Pozole miooooo...",
     };
 
     constexpr bn::string_view npc_08_dialog_lines[] = {
-        "NPC 8 here.",
-        "Write my lines here.",
+        "I miss my brother,",
+        "I hope he's safe.",
     };
 
     constexpr bn::string_view npc_09_dialog_lines[] = {
-        "NPC 9 here.",
-        "Write my lines here.",
+        "The man at the end...",
+        "I think he's the one in charge.",
     };
 
     constexpr bn::string_view npc_10_dialog_lines[] = {
-        "NPC 10 here.",
-        "Write my lines here.",
+        "Hey, do you know what's going on?",
+        "Something strange is happening...",
     };
 
     constexpr bn::string_view npc_11_dialog_lines[] = {
-        "NPC 11 here.",
-        "Write my lines here.",
+        "I miss my family a lot, I think",
+        "the man at the end can help us.",
     };
 
     constexpr bn::string_view npc_12_dialog_lines[] = {
-        "NPC 12 here.",
-        "Write my lines here.",
+        "Are you me? am I you?",
+        "Bibi is not the strange one...",
     };
 
     constexpr bn::string_view npc_13_dialog_lines[] = {
-        "NPC 13 here.",
-        "Write my lines here.",
+        "Go talk to the man at the end,",
+        "He can help.",
     };
 
     constexpr bn::string_view npc_14_dialog_lines[] = {
-        "NPC 14 here.",
-        "Write my lines here.",
+        "Are you talking to all of us?",
+        "Go talk to the man at the end.",
     };
 
     constexpr bn::string_view npc_15_dialog_lines[] = {
-        "NPC 15 here.",
-        "Write my lines here.",
+        "The man at the end can help,",
+        "We should go talk to him.",
     };
 
     constexpr bn::string_view npc_16_dialog_lines[] = {
-        "NPC 16 here.",
-        "Write my lines here.",
+        "The man at the end...",
+        "Maybe he knows what's going on.",
     };
 
     constexpr bn::string_view final_npc_dialog_lines[] = {
-        "So you made it all the way here.",
-        "",
-        "There is nothing left for you on this",
-        "map. Shall I move you along?",
+        "I am Commander Alighieri.",
+        "The original Junior P. Luche.",
+        "Listen carefully:",
+        "this is a dream, Junior.",
+        "Wake up now.",
+        "Your family needs you...",
     };
 
     // The cast, in the order the player meets it walking left to right. Each
@@ -215,58 +210,58 @@ namespace Game::world_map_config
     constexpr npc_definition npc_definitions[] = {
         //  1: col  3, row  4, facing D
         make_npc_definition(-384, -32, frame_facing_down, host_dialog_lines,
-                            dialog_line_count(host_dialog_lines), minigame_id::poker),
+                            dialog_line_count(host_dialog_lines)),
         //  2: col  6, row  8, facing U
         make_npc_definition(-336, 32, frame_facing_up, slot_host_dialog_lines,
-                            dialog_line_count(slot_host_dialog_lines), minigame_id::slots),
+                            dialog_line_count(slot_host_dialog_lines)),
         //  3: col 11, row  4, facing R
         make_npc_definition(-256, -32, frame_facing_right, roulette_host_dialog_lines,
-                            dialog_line_count(roulette_host_dialog_lines), minigame_id::roulette),
+                            dialog_line_count(roulette_host_dialog_lines)),
         //  4: col 12, row  9, facing R
         make_npc_definition(-240, 48, frame_facing_right, sports_betting_host_dialog_lines,
-                            dialog_line_count(sports_betting_host_dialog_lines), minigame_id::sports_betting),
+                            dialog_line_count(sports_betting_host_dialog_lines)),
         //  5: col 15, row  3, facing L
         make_npc_definition(-192, -48, frame_facing_left, npc_05_dialog_lines,
-                            dialog_line_count(npc_05_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_05_dialog_lines)),
         //  6: col 19, row 11, facing R
         make_npc_definition(-128, 80, frame_facing_right, npc_06_dialog_lines,
-                            dialog_line_count(npc_06_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_06_dialog_lines)),
         //  7: col 22, row  2, facing U
         make_npc_definition(-80, -64, frame_facing_up, npc_07_dialog_lines,
-                            dialog_line_count(npc_07_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_07_dialog_lines)),
         //  8: col 22, row  4, facing R
         make_npc_definition(-80, -32, frame_facing_right, npc_08_dialog_lines,
-                            dialog_line_count(npc_08_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_08_dialog_lines)),
         //  9: col 26, row  9, facing R
         make_npc_definition(-16, 48, frame_facing_right, npc_09_dialog_lines,
-                            dialog_line_count(npc_09_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_09_dialog_lines)),
         // 10: col 31, row  1, facing D
         make_npc_definition(64, -80, frame_facing_down, npc_10_dialog_lines,
-                            dialog_line_count(npc_10_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_10_dialog_lines)),
         // 11: col 33, row  4, facing U
         make_npc_definition(96, -32, frame_facing_up, npc_11_dialog_lines,
-                            dialog_line_count(npc_11_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_11_dialog_lines)),
         // 12: col 34, row 11, facing L
         make_npc_definition(112, 80, frame_facing_left, npc_12_dialog_lines,
-                            dialog_line_count(npc_12_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_12_dialog_lines)),
         // 13: col 39, row  9, facing U
         make_npc_definition(192, 48, frame_facing_up, npc_13_dialog_lines,
-                            dialog_line_count(npc_13_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_13_dialog_lines)),
         // 14: col 40, row  3, facing D
         make_npc_definition(208, -48, frame_facing_down, npc_14_dialog_lines,
-                            dialog_line_count(npc_14_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_14_dialog_lines)),
         // 15: col 46, row  9, facing D
         make_npc_definition(304, 48, frame_facing_down, npc_15_dialog_lines,
-                            dialog_line_count(npc_15_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_15_dialog_lines)),
         // 16: col 47, row  4, facing D
         make_npc_definition(320, -32, frame_facing_down, npc_16_dialog_lines,
-                            dialog_line_count(npc_16_dialog_lines), minigame_id::none),
+                            dialog_line_count(npc_16_dialog_lines)),
 
         // The end of the path: talking to him and saying yes leaves the map.
         // col 54, row 6, facing L
         make_npc_definition(432, 0, frame_facing_left, final_npc_dialog_lines,
-                            dialog_line_count(final_npc_dialog_lines), minigame_id::none,
-                            &bn::sprite_items::junior, true)
+                            dialog_line_count(final_npc_dialog_lines), &bn::sprite_items::junior,
+                            true)
     };
 
     constexpr int npc_count = int(sizeof(npc_definitions) / sizeof(npc_definitions[0]));

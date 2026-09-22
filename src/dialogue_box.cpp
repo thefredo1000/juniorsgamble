@@ -24,6 +24,31 @@ namespace Game
         // priority so they still win their tie against the panel (equal
         // priority always resolves in favor of the sprite on GBA hardware).
         constexpr int panel_priority = 2;
+
+        // Pokemon-like text crawl: one character per frame reads clearly while
+        // still feeling responsive.
+        constexpr int characters_per_tick = 1;
+        constexpr int punctuation_pause_frames = 5;
+
+        [[nodiscard]] int line_size(bn::string_view line)
+        {
+            return line.size();
+        }
+
+        [[nodiscard]] bool is_pause_punctuation(char character)
+        {
+            switch(character)
+            {
+                case '.':
+                case '!':
+                case '?':
+                case ';':
+                case ':':
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 
     DialogueBox::DialogueBox(bn::sprite_text_generator& text_generator, bn::ivector<bn::sprite_ptr>& sprites) :
@@ -40,10 +65,13 @@ namespace Game
         _lines = lines;
         _line_count = line_count;
         _line_index = 0;
+        _visible_characters = 0;
+        _pause_frames_remaining = 0;
         _open = true;
         _question_open = false;
         _background.set_visible(true);
 
+        load_current_page_lines();
         redraw_lines();
     }
 
@@ -51,18 +79,16 @@ namespace Game
     {
         _lines = nullptr;
         _line_count = 0;
+        _line_index = 0;
+        _current_line_1 = line_1;
+        _current_line_2 = line_2;
+        _visible_characters = 0;
+        _pause_frames_remaining = 0;
         _open = true;
         _question_open = false;
         _background.set_visible(true);
 
-        _text_box.clear();
-        _text_box.set_alignment(TextBox::alignment_type::LEFT);
-        _text_box.line(box_x, line_1_y, line_1);
-
-        if(line_2.size() > 0)
-        {
-            _text_box.line(box_x, line_2_y, line_2);
-        }
+        redraw_lines();
     }
 
     void DialogueBox::open_question(bn::string_view prompt, bn::string_view yes_label, bn::string_view no_label)
@@ -83,6 +109,49 @@ namespace Game
         return _line_index + 2 < _line_count;
     }
 
+    bool DialogueBox::is_current_page_fully_visible() const
+    {
+        return _visible_characters >= line_size(_current_line_1) + line_size(_current_line_2);
+    }
+
+    void DialogueBox::tick()
+    {
+        if(! _open || _question_open || is_current_page_fully_visible())
+        {
+            return;
+        }
+
+        if(_pause_frames_remaining > 0)
+        {
+            --_pause_frames_remaining;
+            return;
+        }
+
+        _visible_characters += characters_per_tick;
+
+        const int current_page_size = line_size(_current_line_1) + line_size(_current_line_2);
+
+        if(_visible_characters > current_page_size)
+        {
+            _visible_characters = current_page_size;
+        }
+
+        if(_visible_characters > 0 && _visible_characters < current_page_size)
+        {
+            const int revealed_index = _visible_characters - 1;
+            const char revealed_character = revealed_index < line_size(_current_line_1) ?
+                    _current_line_1[revealed_index] :
+                    _current_line_2[revealed_index - line_size(_current_line_1)];
+
+            if(is_pause_punctuation(revealed_character))
+            {
+                _pause_frames_remaining = punctuation_pause_frames;
+            }
+        }
+
+        redraw_lines();
+    }
+
     void DialogueBox::move_question_cursor(int index)
     {
         if(_question_index == index)
@@ -96,12 +165,21 @@ namespace Game
 
     bool DialogueBox::advance()
     {
+        if(! is_current_page_fully_visible())
+        {
+            reveal_current_page();
+            return true;
+        }
+
         if(! has_more_pages())
         {
             return false;
         }
 
         _line_index += 2;
+        _visible_characters = 0;
+        _pause_frames_remaining = 0;
+        load_current_page_lines();
         redraw_lines();
         return true;
     }
@@ -113,21 +191,48 @@ namespace Game
         _lines = nullptr;
         _line_count = 0;
         _line_index = 0;
+        _current_line_1 = bn::string_view();
+        _current_line_2 = bn::string_view();
+        _visible_characters = 0;
+        _pause_frames_remaining = 0;
         _question_index = 0;
         _background.set_visible(false);
         _text_box.clear();
         _text_box.set_alignment(TextBox::alignment_type::CENTER);
     }
 
-    void DialogueBox::redraw_lines()
+    void DialogueBox::load_current_page_lines()
     {
-        _text_box.clear();
-        _text_box.set_alignment(TextBox::alignment_type::LEFT);
-        _text_box.line(box_x, line_1_y, _lines[_line_index]);
+        _current_line_1 = _line_count > 0 ? _lines[_line_index] : bn::string_view();
 
         if(_line_index + 1 < _line_count)
         {
-            _text_box.line(box_x, line_2_y, _lines[_line_index + 1]);
+            _current_line_2 = _lines[_line_index + 1];
+        }
+        else
+        {
+            _current_line_2 = bn::string_view();
+        }
+    }
+
+    void DialogueBox::redraw_lines()
+    {
+        const int first_line_visible = _visible_characters < _current_line_1.size() ?
+            _visible_characters : line_size(_current_line_1);
+        const int second_line_visible = _visible_characters > line_size(_current_line_1) ?
+            _visible_characters - line_size(_current_line_1) : 0;
+
+        _text_box.clear();
+        _text_box.set_alignment(TextBox::alignment_type::LEFT);
+        _text_box.line(box_x, line_1_y,
+                       bn::string_view(_current_line_1.data(), first_line_visible));
+
+        if(second_line_visible > 0)
+        {
+            const int clamped_second_line_visible = second_line_visible < line_size(_current_line_2) ?
+                second_line_visible : line_size(_current_line_2);
+            _text_box.line(box_x, line_2_y,
+                           bn::string_view(_current_line_2.data(), clamped_second_line_visible));
         }
     }
 
@@ -141,5 +246,11 @@ namespace Game
 
         const bn::fixed cursor_x = box_x + (_question_index == 0 ? 0 : option_spacing);
         _text_box.line(cursor_x, line_2_y, ">");
+    }
+
+    void DialogueBox::reveal_current_page()
+    {
+        _visible_characters = line_size(_current_line_1) + line_size(_current_line_2);
+        redraw_lines();
     }
 }

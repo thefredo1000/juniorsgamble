@@ -183,6 +183,22 @@ namespace Game
         bn::vector<bn::sprite_ptr, 96> dialog_sprites;
         DialogueBox dialogue_box(text_generator, dialog_sprites);
 
+        dialogue_box.open_notice(world_map_config::intro_notice_line_1,
+                                 world_map_config::intro_notice_line_2);
+
+        while(dialogue_box.is_open())
+        {
+            dialogue_box.tick();
+
+            if(input::confirm_pressed() || input::back_pressed())
+            {
+                dialogue_box.close();
+                break;
+            }
+
+            bn::core::update();
+        }
+
         auto start_npc_dialog = [&](int npc_index)
         {
             const int npc_standing_frame = world_map_interaction::npc_dialog_facing_frame(state.facing_direction);
@@ -211,24 +227,6 @@ namespace Game
             if(talking_npc_index >= 0 && state.active_npc_index < 0)
             {
                 end_npc_dialog(talking_npc_index);
-            }
-            if(dialog_result.status == world_map_dialog::dialog_status::start_minigame)
-            {
-                if(load_money() > 0)
-                {
-                    return { world_map_outcome::start_minigame, dialog_result.minigame };
-                }
-
-                world_map_dialog::close_dialog(dialogue_box, state);
-                dialogue_box.open_notice("You're out of money!", "Come back after a break.");
-
-                while(! input::confirm_pressed() && ! input::back_pressed())
-                {
-                    bn::core::update();
-                }
-
-                dialogue_box.close();
-                continue;
             }
 
             if(dialog_result.status == world_map_dialog::dialog_status::skip_level)

@@ -42,12 +42,14 @@ namespace Game
         }
 
         [[nodiscard]] bool has_more_pages() const;
+        [[nodiscard]] bool is_current_page_fully_visible() const;
 
         [[nodiscard]] int question_index() const
         {
             return _question_index;
         }
 
+        void tick();
         void move_question_cursor(int index);
 
         // Advances to the next page. Returns false without changing
@@ -58,8 +60,10 @@ namespace Game
         void close();
 
     private:
+        void load_current_page_lines();
         void redraw_lines();
         void redraw_question();
+        void reveal_current_page();
 
         bn::regular_bg_ptr _background;
         TextBox _text_box;
@@ -67,6 +71,10 @@ namespace Game
         const bn::string_view* _lines = nullptr;
         int _line_count = 0;
         int _line_index = 0;
+        bn::string_view _current_line_1;
+        bn::string_view _current_line_2;
+        int _visible_characters = 0;
+        int _pause_frames_remaining = 0;
 
         bool _open = false;
         bool _question_open = false;

@@ -4,7 +4,6 @@
 #include "bn_keypad.h"
 
 #include "game_input.h"
-#include "minigame.h"
 
 namespace Game::world_map_dialog
 {
@@ -34,10 +33,8 @@ namespace Game::world_map_dialog
             return { dialog_status::no_dialog };
         }
 
-        const minigame_id active_trigger =
-                state.active_npc_index >= 0 ? npc_definitions[state.active_npc_index].game_trigger
-                                            : minigame_id::none;
-        const minigame_definition* active_minigame = find_minigame(active_trigger);
+        dialogue_box.tick();
+
         const bool active_skips_level =
                 state.active_npc_index >= 0 && npc_definitions[state.active_npc_index].skips_level;
 
@@ -55,11 +52,6 @@ namespace Game::world_map_dialog
             {
                 if(dialogue_box.question_index() == 0)
                 {
-                    if(active_minigame)
-                    {
-                        return { dialog_status::start_minigame, active_trigger };
-                    }
-
                     if(active_skips_level)
                     {
                         return { dialog_status::skip_level };
@@ -81,11 +73,7 @@ namespace Game::world_map_dialog
         {
             if(! dialogue_box.advance())
             {
-                if(active_minigame)
-                {
-                    dialogue_box.open_question(active_minigame->question, "Yes", "No");
-                }
-                else if(active_skips_level)
+                if(active_skips_level)
                 {
                     dialogue_box.open_question(world_map_config::skip_level_question, "Yes", "No");
                 }

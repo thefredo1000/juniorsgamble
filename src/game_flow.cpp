@@ -111,7 +111,8 @@ namespace
         bn::vector<bn::sprite_ptr, 32> info_sprites;
         Game::TextBox(text_generator, info_sprites)
                 .set_alignment(Game::TextBox::alignment_type::CENTER)
-                .line(0, 44, "Level skipped");
+                .line(0, 30, "Next game view")
+                .line(0, 54, "coming soon");
 
         while(! Game::input::confirm_pressed() && ! Game::input::back_pressed())
         {
@@ -165,18 +166,11 @@ namespace Game
                     break;
                 case FlowScene::WORLD_MAP:
                 {
-                    // The world map decides what the player asked for; the table
-                    // knows how to run a game.
+                    // The world map now only decides whether the player exits
+                    // or accepts the final NPC's offer to move on.
                     const world_map_result result = world_map_screen();
 
-                    if(result.outcome == world_map_outcome::start_minigame)
-                    {
-                        if(const minigame_definition* minigame = find_minigame(result.minigame))
-                        {
-                            minigame->run();
-                        }
-                    }
-                    else if(result.outcome == world_map_outcome::skip_level)
+                    if(result.outcome == world_map_outcome::skip_level)
                     {
                         // Placeholder: there is only the one map so far, so
                         // skipping it lands back in the menu. The next level
