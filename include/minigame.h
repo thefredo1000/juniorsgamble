@@ -1,6 +1,8 @@
 #ifndef MINIGAME_H
 #define MINIGAME_H
 
+#include <cstdint>
+
 #include "bn_string_view.h"
 
 namespace Game
@@ -9,7 +11,7 @@ namespace Game
     // Adding one means adding a value here and a row to the table in
     // minigame.cpp; nothing else in the world map or the game flow needs to
     // learn about it.
-    enum class minigame_id
+    enum class minigame_id : uint8_t
     {
         none,
         poker,

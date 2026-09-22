@@ -7,7 +7,6 @@
 #include "bn_keypad.h"
 #include "bn_display.h"
 #include "bn_blending.h"
-#include "bn_unique_ptr.h"
 #include "bn_fixed_point.h"
 #include "bn_rect_window.h"
 #include "bn_affine_bg_ptr.h"
@@ -50,7 +49,7 @@ int main()
     bn::affine_bg_ptr clouds_bg = bn::affine_bg_items::clouds.create_bg(0, 0);
     clouds_bg.set_priority(2);
     clouds_bg.set_blending_enabled(true);
-    bn::blending::set_transparency_alpha(0.5);
+    bn::blending::set_transparency_alpha(bn::fixed::from_data(bn::fixed::scale() / 2));
 
     bn::rect_window rect_window = bn::rect_window::external();
     rect_window.set_boundaries(attributes_window_height - (bn::display::height() / 2),
@@ -62,9 +61,7 @@ int main()
     outside_window.set_show_bg(land_bg, false);
     outside_window.set_show_bg(clouds_bg, false);
 
-    bn::unique_ptr<bn::array<bn::affine_bg_mat_attributes, bn::display::height()>> land_attributes_ptr(
-            new bn::array<bn::affine_bg_mat_attributes, bn::display::height()>());
-    bn::array<bn::affine_bg_mat_attributes, bn::display::height()>& land_attributes = *land_attributes_ptr;
+        static bn::array<bn::affine_bg_mat_attributes, bn::display::height()> land_attributes;
     bn::affine_bg_pa_register_hbe_ptr land_pa_hbe =
             bn::affine_bg_pa_register_hbe_ptr::create(land_bg, land_attributes._data);
     bn::affine_bg_pd_register_hbe_ptr land_pd_hbe =
@@ -74,9 +71,7 @@ int main()
     bn::affine_bg_dy_register_hbe_ptr land_dy_hbe =
             bn::affine_bg_dy_register_hbe_ptr::create(land_bg, land_attributes._data);
 
-    bn::unique_ptr<bn::array<bn::affine_bg_mat_attributes, bn::display::height()>> clouds_attributes_ptr(
-            new bn::array<bn::affine_bg_mat_attributes, bn::display::height()>());
-    bn::array<bn::affine_bg_mat_attributes, bn::display::height()>& clouds_attributes = *clouds_attributes_ptr;
+        static bn::array<bn::affine_bg_mat_attributes, bn::display::height()> clouds_attributes;
     bn::affine_bg_pa_register_hbe_ptr clouds_pa_hbe =
             bn::affine_bg_pa_register_hbe_ptr::create(clouds_bg, clouds_attributes._data);
     bn::affine_bg_pd_register_hbe_ptr clouds_pd_hbe =
@@ -89,6 +84,7 @@ int main()
     bn::sprite_ptr junior_sprite = bn::sprite_items::junior.create_sprite(0, 0);
     bn::sprite_animate_action<4> junior_animate_action = bn::create_sprite_animate_action_forever(
                 junior_sprite, 12, bn::sprite_items::junior.tiles_item(), 0, 1, 2, 3);
+    constexpr bn::fixed cloud_drift = bn::fixed::from_data(bn::fixed::scale() / 10);
 
     union direction
     {
@@ -141,7 +137,7 @@ int main()
         }
 
         clouds_bg.set_pivot_position(clouds_bg.pivot_position() + land_bg.pivot_position() - old_pivot_position +
-                                     bn::fixed_point(0.1, 0.1));
+                                     bn::fixed_point(cloud_drift, cloud_drift));
 
         load_attributes(land_bg.mat_attributes(), land_attributes._data);
         load_attributes(clouds_bg.mat_attributes(), clouds_attributes._data);

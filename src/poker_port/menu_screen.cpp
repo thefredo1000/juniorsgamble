@@ -3,17 +3,15 @@
 #include "bn_bg_palettes.h"
 
 #include "bn_core.h"
-#include "scene_type.h"
+#include "bn_keypad.h"
+
 #include "common_variable_8x8_sprite_font.h"
 #include "common_variable_16x16_sprite_font.h"
-#include "bn_sprite_items_cards_diamond.h"
-#include "bn_sprite_items_cards_hearts.h"
-#include "bn_sprite_items_cards_spades.h"
-#include "bn_sprite_items_cards_clubs.h"
-#include "bn_sprite_items_card_back.h"
 #include "bn_sprite_actions.h"
 #include "bn_sprite_builder.h"
-#include "bn_keypad.h"
+
+#include "card_sprite_utils.h"
+#include "scene_type.h"
 
 #include "text_box.h"
 
@@ -21,6 +19,9 @@ namespace Game
 {
     SceneType menu_screen()
     {
+        constexpr int first_option_index = 0;
+        constexpr int last_option_index = 2;
+
         // Background color
         bn::bg_palettes::set_transparent_color(poker_table_green);
         bn::sprite_text_generator title_text_generator(common::variable_16x16_sprite_font);
@@ -40,16 +41,22 @@ namespace Game
         }
 
         // Card sprites
-        bn::sprite_ptr card_sprite_left = bn::sprite_items::cards_spades.create_sprite(-56, -24);
-        bn::sprite_ptr card_sprite_right = bn::sprite_items::cards_diamond.create_sprite(56, -24);
+        bn::sprite_ptr card_sprite_left = poker_card_visual::create_card_sprite(-56, -24, Poker::Suit::SPADES);
+        bn::sprite_ptr card_sprite_right = poker_card_visual::create_card_sprite(56, -24, Poker::Suit::DIAMONDS);
 
-        int text_index = 0;
+        int text_index = first_option_index;
+
+        auto update_selection_cursor = [&]()
+        {
+            const int cursor_y = (text_index - 1) * 24;
+            card_sprite_left.set_y(cursor_y);
+            card_sprite_right.set_y(cursor_y);
+        };
+
+        update_selection_cursor();
 
         while (true)
         {
-            card_sprite_left.set_y((text_index - 1) * 24);
-            card_sprite_right.set_y((text_index - 1) * 24);
-
             if (bn::keypad::b_pressed())
             {
                 return Game::SceneType::EXIT;
@@ -62,11 +69,23 @@ namespace Game
 
             if (bn::keypad::up_pressed())
             {
-                text_index = text_index - (text_index != 0);
+                const int previous_text_index = text_index;
+                text_index = text_index - (text_index != first_option_index);
+
+                if(text_index != previous_text_index)
+                {
+                    update_selection_cursor();
+                }
             }
             else if (bn::keypad::down_pressed())
             {
-                text_index = text_index + (text_index != 2);
+                const int previous_text_index = text_index;
+                text_index = text_index + (text_index != last_option_index);
+
+                if(text_index != previous_text_index)
+                {
+                    update_selection_cursor();
+                }
             }
 
             bn::core::update();

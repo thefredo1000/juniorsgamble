@@ -7,7 +7,7 @@
 
 void load_attributes(bn::affine_bg_mat_attributes base_attributes, bn::affine_bg_mat_attributes* attributes)
 {
-    constexpr bn::fixed scale_inc = 0.003;
+    constexpr bn::fixed scale_inc = bn::fixed::from_data((bn::fixed::scale() * 3) / 1000);
 
     bn::fixed scale = base_attributes.horizontal_scale() + (scale_inc * attributes_window_height);
 

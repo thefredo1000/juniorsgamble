@@ -20,7 +20,6 @@ namespace Poker
         {
             return this->deck;
         }
-        void log_deck();
 
     private:
         bn::vector<Card, 52> deck;

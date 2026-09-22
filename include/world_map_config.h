@@ -1,6 +1,8 @@
 #ifndef WORLD_MAP_CONFIG_H
 #define WORLD_MAP_CONFIG_H
 
+#include <cstdint>
+
 #include "bn_sprite_item.h"
 #include "bn_string_view.h"
 
@@ -57,19 +59,16 @@ namespace Game::world_map_config
 
     struct npc_definition
     {
-        int world_x;
-        int world_y;
-        int standing_frame;
         const bn::string_view* dialog_lines;
-        int dialog_lines_count;
+      const bn::sprite_item* sprite_item = &bn::sprite_items::junior;
+      int16_t world_x;
+      int16_t world_y;
+      uint8_t standing_frame;
+      uint8_t dialog_lines_count;
+
         // What talking to this NPC offers to start, once its dialog lines finish
         // and the player confirms the follow-up yes/no question.
         minigame_id game_trigger = minigame_id::none;
-
-        // Which graphic this NPC uses. Every character sheet is laid out like
-        // junior.bmp (16x256, sixteen 16x16 frames), so any of them can be
-        // dropped in here.
-        const bn::sprite_item* sprite_item = &bn::sprite_items::junior;
 
         // Saying yes to this NPC's question leaves the world map instead of
         // starting a game. Only the NPC at the end of the path uses it, and an
@@ -79,9 +78,32 @@ namespace Game::world_map_config
 
     // Counts a dialog line array, so the table below stays readable.
     template<int Count>
-    [[nodiscard]] constexpr int dialog_line_count(const bn::string_view (&)[Count])
+    [[nodiscard]] constexpr uint8_t dialog_line_count(const bn::string_view (&)[Count])
     {
-        return Count;
+      static_assert(Count <= 255, "NPC dialog count exceeds uint8_t storage");
+      return static_cast<uint8_t>(Count);
+    }
+
+    [[nodiscard]] constexpr npc_definition make_npc_definition(
+        int world_x,
+        int world_y,
+        int standing_frame,
+        const bn::string_view* dialog_lines,
+        uint8_t dialog_lines_count,
+        minigame_id game_trigger = minigame_id::none,
+        const bn::sprite_item* sprite_item = &bn::sprite_items::junior,
+        bool skips_level = false)
+    {
+      return {
+        dialog_lines,
+        sprite_item,
+        static_cast<int16_t>(world_x),
+        static_cast<int16_t>(world_y),
+        static_cast<uint8_t>(standing_frame),
+        dialog_lines_count,
+        game_trigger,
+        skips_level
+      };
     }
 
     // What the last NPC asks, the way a minigame host asks its own question.
@@ -192,59 +214,59 @@ namespace Game::world_map_config
     // entry names its tile in world_map_layout.txt, so the two stay in step.
     constexpr npc_definition npc_definitions[] = {
         //  1: col  3, row  4, facing D
-        { -384, -32, frame_facing_down, host_dialog_lines,
-          dialog_line_count(host_dialog_lines), minigame_id::poker },
+        make_npc_definition(-384, -32, frame_facing_down, host_dialog_lines,
+                            dialog_line_count(host_dialog_lines), minigame_id::poker),
         //  2: col  6, row  8, facing U
-        { -336, 32, frame_facing_up, slot_host_dialog_lines,
-          dialog_line_count(slot_host_dialog_lines), minigame_id::slots },
+        make_npc_definition(-336, 32, frame_facing_up, slot_host_dialog_lines,
+                            dialog_line_count(slot_host_dialog_lines), minigame_id::slots),
         //  3: col 11, row  4, facing R
-        { -256, -32, frame_facing_right, roulette_host_dialog_lines,
-          dialog_line_count(roulette_host_dialog_lines), minigame_id::roulette },
+        make_npc_definition(-256, -32, frame_facing_right, roulette_host_dialog_lines,
+                            dialog_line_count(roulette_host_dialog_lines), minigame_id::roulette),
         //  4: col 12, row  9, facing R
-        { -240, 48, frame_facing_right, sports_betting_host_dialog_lines,
-          dialog_line_count(sports_betting_host_dialog_lines), minigame_id::sports_betting },
+        make_npc_definition(-240, 48, frame_facing_right, sports_betting_host_dialog_lines,
+                            dialog_line_count(sports_betting_host_dialog_lines), minigame_id::sports_betting),
         //  5: col 15, row  3, facing L
-        { -192, -48, frame_facing_left, npc_05_dialog_lines,
-          dialog_line_count(npc_05_dialog_lines), minigame_id::none },
+        make_npc_definition(-192, -48, frame_facing_left, npc_05_dialog_lines,
+                            dialog_line_count(npc_05_dialog_lines), minigame_id::none),
         //  6: col 19, row 11, facing R
-        { -128, 80, frame_facing_right, npc_06_dialog_lines,
-          dialog_line_count(npc_06_dialog_lines), minigame_id::none },
+        make_npc_definition(-128, 80, frame_facing_right, npc_06_dialog_lines,
+                            dialog_line_count(npc_06_dialog_lines), minigame_id::none),
         //  7: col 22, row  2, facing U
-        { -80, -64, frame_facing_up, npc_07_dialog_lines,
-          dialog_line_count(npc_07_dialog_lines), minigame_id::none },
+        make_npc_definition(-80, -64, frame_facing_up, npc_07_dialog_lines,
+                            dialog_line_count(npc_07_dialog_lines), minigame_id::none),
         //  8: col 22, row  4, facing R
-        { -80, -32, frame_facing_right, npc_08_dialog_lines,
-          dialog_line_count(npc_08_dialog_lines), minigame_id::none },
+        make_npc_definition(-80, -32, frame_facing_right, npc_08_dialog_lines,
+                            dialog_line_count(npc_08_dialog_lines), minigame_id::none),
         //  9: col 26, row  9, facing R
-        { -16, 48, frame_facing_right, npc_09_dialog_lines,
-          dialog_line_count(npc_09_dialog_lines), minigame_id::none },
+        make_npc_definition(-16, 48, frame_facing_right, npc_09_dialog_lines,
+                            dialog_line_count(npc_09_dialog_lines), minigame_id::none),
         // 10: col 31, row  1, facing D
-        { 64, -80, frame_facing_down, npc_10_dialog_lines,
-          dialog_line_count(npc_10_dialog_lines), minigame_id::none },
+        make_npc_definition(64, -80, frame_facing_down, npc_10_dialog_lines,
+                            dialog_line_count(npc_10_dialog_lines), minigame_id::none),
         // 11: col 33, row  4, facing U
-        { 96, -32, frame_facing_up, npc_11_dialog_lines,
-          dialog_line_count(npc_11_dialog_lines), minigame_id::none },
+        make_npc_definition(96, -32, frame_facing_up, npc_11_dialog_lines,
+                            dialog_line_count(npc_11_dialog_lines), minigame_id::none),
         // 12: col 34, row 11, facing L
-        { 112, 80, frame_facing_left, npc_12_dialog_lines,
-          dialog_line_count(npc_12_dialog_lines), minigame_id::none },
+        make_npc_definition(112, 80, frame_facing_left, npc_12_dialog_lines,
+                            dialog_line_count(npc_12_dialog_lines), minigame_id::none),
         // 13: col 39, row  9, facing U
-        { 192, 48, frame_facing_up, npc_13_dialog_lines,
-          dialog_line_count(npc_13_dialog_lines), minigame_id::none },
+        make_npc_definition(192, 48, frame_facing_up, npc_13_dialog_lines,
+                            dialog_line_count(npc_13_dialog_lines), minigame_id::none),
         // 14: col 40, row  3, facing D
-        { 208, -48, frame_facing_down, npc_14_dialog_lines,
-          dialog_line_count(npc_14_dialog_lines), minigame_id::none },
+        make_npc_definition(208, -48, frame_facing_down, npc_14_dialog_lines,
+                            dialog_line_count(npc_14_dialog_lines), minigame_id::none),
         // 15: col 46, row  9, facing D
-        { 304, 48, frame_facing_down, npc_15_dialog_lines,
-          dialog_line_count(npc_15_dialog_lines), minigame_id::none },
+        make_npc_definition(304, 48, frame_facing_down, npc_15_dialog_lines,
+                            dialog_line_count(npc_15_dialog_lines), minigame_id::none),
         // 16: col 47, row  4, facing D
-        { 320, -32, frame_facing_down, npc_16_dialog_lines,
-          dialog_line_count(npc_16_dialog_lines), minigame_id::none },
+        make_npc_definition(320, -32, frame_facing_down, npc_16_dialog_lines,
+                            dialog_line_count(npc_16_dialog_lines), minigame_id::none),
 
         // The end of the path: talking to him and saying yes leaves the map.
         // col 54, row 6, facing L
-        { 432, 0, frame_facing_left, final_npc_dialog_lines,
-          dialog_line_count(final_npc_dialog_lines), minigame_id::none,
-          &bn::sprite_items::junior, true }
+        make_npc_definition(432, 0, frame_facing_left, final_npc_dialog_lines,
+                            dialog_line_count(final_npc_dialog_lines), minigame_id::none,
+                            &bn::sprite_items::junior, true)
     };
 
     constexpr int npc_count = int(sizeof(npc_definitions) / sizeof(npc_definitions[0]));

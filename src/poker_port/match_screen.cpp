@@ -12,12 +12,8 @@
 #include "bn_regular_bg_items_title_screen.h"
 #include "bn_sprite_items_chips.h"
 #include "bn_sprite_items_chip_margin.h"
-#include "bn_sprite_items_cards_diamond.h"
-#include "bn_sprite_items_cards_hearts.h"
-#include "bn_sprite_items_cards_spades.h"
-#include "bn_sprite_items_cards_clubs.h"
-#include "bn_sprite_items_card_back.h"
 
+#include "card_sprite_utils.h"
 #include "poker_deck.h"
 #include "poker_pocket.h"
 #include "poker_dealer.h"
@@ -30,85 +26,71 @@
 
 namespace Game
 {
+    constexpr bn::fixed card_flip_scale_step = bn::fixed::from_data(bn::fixed::scale() / 10);
+    constexpr bn::fixed full_card_scale = bn::fixed::from_data(bn::fixed::scale());
+
+    [[nodiscard]] bn::fixed step_towards(bn::fixed current, bn::fixed target, bn::fixed step)
+    {
+        if(current < target)
+        {
+            current += step;
+
+            if(current > target)
+            {
+                current = target;
+            }
+        }
+        else if(current > target)
+        {
+            current -= step;
+
+            if(current < target)
+            {
+                current = target;
+            }
+        }
+
+        return current;
+    }
 
     void show_card(Poker::Card &card, bn::sprite_ptr &card_sprite)
     {
-        while (card_sprite.vertical_scale() > 0.1)
+        bn::fixed vertical_scale = card_sprite.vertical_scale();
+
+        while (vertical_scale > card_flip_scale_step)
         {
-            card_sprite.set_vertical_scale(card_sprite.vertical_scale() - 0.1);
+            vertical_scale -= card_flip_scale_step;
+            card_sprite.set_vertical_scale(vertical_scale);
             bn::core::update();
         }
 
-        switch (card.get_suit())
-        {
-        case Poker::Suit::DIAMONDS:
-            card_sprite.set_item(bn::sprite_items::cards_diamond);
-            card_sprite.set_tiles(bn::sprite_items::cards_diamond.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
-            break;
-        case Poker::Suit::HEARTS:
-            card_sprite.set_item(bn::sprite_items::cards_hearts);
-            card_sprite.set_tiles(bn::sprite_items::cards_hearts.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
-            break;
-        case Poker::Suit::SPADES:
-            card_sprite.set_item(bn::sprite_items::cards_spades);
-            card_sprite.set_tiles(bn::sprite_items::cards_spades.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
-            break;
-        case Poker::Suit::CLUBS:
-            card_sprite.set_item(bn::sprite_items::cards_clubs);
-            card_sprite.set_tiles(bn::sprite_items::cards_clubs.tiles_item().create_tiles(static_cast<int>(card.get_rank())));
-            break;
-        default:
-            card_sprite.set_item(bn::sprite_items::card_back);
-            break;
-        }
+        poker_card_visual::set_card_sprite(card_sprite, card);
 
-        while (card_sprite.vertical_scale() <= 1)
+        while (vertical_scale < full_card_scale)
         {
-            card_sprite.set_vertical_scale(card_sprite.vertical_scale() + 0.1);
+            vertical_scale += card_flip_scale_step;
+
+            if(vertical_scale > full_card_scale)
+            {
+                vertical_scale = full_card_scale;
+            }
+
+            card_sprite.set_vertical_scale(vertical_scale);
             bn::core::update();
         }
     }
 
     void move_card(bn::sprite_ptr &card_sprite, bn::fixed x_destination, bn::fixed y_destination)
     {
-        const int movement_speed = 4; // You can adjust the speed as needed
+        constexpr bn::fixed movement_speed = 4;
 
         bn::fixed x = card_sprite.x();
         bn::fixed y = card_sprite.y();
 
-        while (card_sprite.x() != x_destination || card_sprite.y() != y_destination)
+        while (x != x_destination || y != y_destination)
         {
-            if (card_sprite.x() != x_destination)
-            {
-                if (x < x_destination)
-                {
-                    x += movement_speed;
-                    if (x > x_destination)
-                        x = x_destination; // Clamp to destination if overshooting
-                }
-                else
-                {
-                    x -= movement_speed;
-                    if (x < x_destination)
-                        x = x_destination; // Clamp to destination if overshooting
-                }
-            }
-
-            if (card_sprite.y() != y_destination)
-            {
-                if (y < y_destination)
-                {
-                    y += movement_speed;
-                    if (y > y_destination)
-                        y = y_destination; // Clamp to destination if overshooting
-                }
-                else
-                {
-                    y -= movement_speed;
-                    if (y < y_destination)
-                        y = y_destination; // Clamp to destination if overshooting
-                }
-            }
+            x = step_towards(x, x_destination, movement_speed);
+            y = step_towards(y, y_destination, movement_speed);
 
             card_sprite.set_x(x);
             card_sprite.set_y(y);
