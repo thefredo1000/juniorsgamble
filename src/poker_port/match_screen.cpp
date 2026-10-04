@@ -2,113 +2,85 @@
 
 #include "bn_core.h"
 #include "bn_bg_palettes.h"
+#include "bn_bg_palettes_actions.h"
+#include "bn_sprite_palettes_actions.h"
 #include "bn_keypad.h"
+#include "bn_algorithm.h"
 #include "bn_display.h"
 
 #include "common_info.h"
-#include "common_variable_8x8_sprite_font.h"
-#include "common_variable_8x16_sprite_font.h"
-#include "common_variable_16x16_sprite_font.h"
-#include "bn_regular_bg_items_title_screen.h"
 #include "bn_sprite_items_chips.h"
-#include "bn_sprite_items_chip_margin.h"
+#include "bn_sprite_items_chip_slot.h"
+#include "bn_sprite_items_chip_stack.h"
 
 #include "card_sprite_utils.h"
+#include "chip_palettes.h"
 #include "poker_deck.h"
 #include "poker_pocket.h"
 #include "poker_dealer.h"
 #include "poker_hand.h"
 #include "poker_table.h"
-#include "menu_screen.h"
 #include "money.h"
 #include "text_box.h"
 #include "text_format.h"
 
 namespace Game
 {
-    constexpr bn::fixed card_flip_scale_step = bn::fixed::from_data(bn::fixed::scale() / 10);
-    constexpr bn::fixed full_card_scale = bn::fixed::from_data(bn::fixed::scale());
-
-    [[nodiscard]] bn::fixed step_towards(bn::fixed current, bn::fixed target, bn::fixed step)
-    {
-        if(current < target)
-        {
-            current += step;
-
-            if(current > target)
-            {
-                current = target;
-            }
-        }
-        else if(current > target)
-        {
-            current -= step;
-
-            if(current < target)
-            {
-                current = target;
-            }
-        }
-
-        return current;
-    }
-
     void show_card(Poker::Card &card, bn::sprite_ptr &card_sprite)
     {
-        bn::fixed vertical_scale = card_sprite.vertical_scale();
+        constexpr int half_flip_frames = 7;
+        constexpr bn::fixed min_scale = bn::fixed::from_data(bn::fixed::scale() / 16);
 
-        while (vertical_scale > card_flip_scale_step)
+        // The card turns around its vertical axis, so its width follows a
+        // quarter of a cosine: it barely narrows at first and snaps shut at the
+        // end, then opens the same way mirrored. 1 - t^2 is close enough.
+        for(int frame = 1; frame <= half_flip_frames; ++frame)
         {
-            vertical_scale -= card_flip_scale_step;
-            card_sprite.set_vertical_scale(vertical_scale);
+            const bn::fixed progress = bn::fixed(frame) / half_flip_frames;
+            card_sprite.set_horizontal_scale(bn::max(1 - (progress * progress), min_scale));
             bn::core::update();
         }
 
         poker_card_visual::set_card_sprite(card_sprite, card);
 
-        while (vertical_scale < full_card_scale)
+        for(int frame = 1; frame <= half_flip_frames; ++frame)
         {
-            vertical_scale += card_flip_scale_step;
-
-            if(vertical_scale > full_card_scale)
-            {
-                vertical_scale = full_card_scale;
-            }
-
-            card_sprite.set_vertical_scale(vertical_scale);
+            const bn::fixed remaining = 1 - (bn::fixed(frame) / half_flip_frames);
+            card_sprite.set_horizontal_scale(bn::max(1 - (remaining * remaining), min_scale));
             bn::core::update();
         }
+
+        card_sprite.set_horizontal_scale(1);
     }
 
-    void move_card(bn::sprite_ptr &card_sprite, bn::fixed x_destination, bn::fixed y_destination)
+    void move_sprite(bn::sprite_ptr &sprite, bn::fixed x_destination, bn::fixed y_destination, int frames)
     {
-        constexpr bn::fixed movement_speed = 4;
+        const bn::fixed x_start = sprite.x();
+        const bn::fixed y_start = sprite.y();
 
-        bn::fixed x = card_sprite.x();
-        bn::fixed y = card_sprite.y();
-
-        while (x != x_destination || y != y_destination)
+        // Ease out: the sprite leaves fast and slows down as it lands.
+        for(int frame = 1; frame <= frames; ++frame)
         {
-            x = step_towards(x, x_destination, movement_speed);
-            y = step_towards(y, y_destination, movement_speed);
+            const bn::fixed remaining = 1 - (bn::fixed(frame) / frames);
+            const bn::fixed progress = 1 - (remaining * remaining);
 
-            card_sprite.set_x(x);
-            card_sprite.set_y(y);
+            sprite.set_x(x_start + ((x_destination - x_start) * progress));
+            sprite.set_y(y_start + ((y_destination - y_start) * progress));
             bn::core::update();
         }
+
+        sprite.set_position(x_destination, y_destination);
     }
 
-    SceneType match_screen(bn::sprite_text_generator &text_generator)
+    bool match_screen(bn::sprite_text_generator &text_generator, bool fade_in)
     {
-        bn::bg_palettes::set_transparent_color(poker_table_green);
-
         // Read money from the shared game-wide money system
         int money = load_money();
 
         // Text Sprites
         bn::vector<bn::sprite_ptr, 64> text_sprites;
         TextBox text_box(text_generator, text_sprites);
-        text_box.set_alignment(TextBox::alignment_type::LEFT).line(-50, -70, "Press A to play");
+        text_box.set_alignment(TextBox::alignment_type::LEFT);
 
         bn::vector<bn::sprite_ptr, 4> money_sprites;
         TextBox money_box(text_generator, money_sprites);
@@ -117,7 +89,7 @@ namespace Game
         auto redraw_money = [&]()
         {
             money_box.clear();
-            money_box.line(-114, 70, text::format<24>("Money: {}", money));
+            money_box.line(-114, -70, text::format<24>("Money: {}", money));
         };
         redraw_money();
 
@@ -155,41 +127,106 @@ namespace Game
         dealer_cards_sprite.push_back(bn::sprite_items::card_back.create_sprite(deck_position.x, deck_position.y));
         dealer_cards_sprite.push_back(bn::sprite_items::card_back.create_sprite(deck_position.x, deck_position.y));
 
-        // Ante Margin Sprites
-        bn::sprite_ptr ante_margin_sprite = bn::sprite_items::chip_margin.create_sprite(-18, 50);
-        ante_margin_sprite.set_z_order(1);
-        text_box.line(-32, 70, "ante");
+        // Player's chip stack, colored after the bet it is about to place
+        bn::sprite_ptr chip_stack_sprite =
+                bn::sprite_items::chip_stack.create_sprite(chip_stack_position.x, chip_stack_position.y);
+        chip_stack_sprite.set_z_order(-2);
 
-        // Call Margin Sprites
-        bn::sprite_ptr call_margin_sprite = bn::sprite_items::chip_margin.create_sprite(18, 50);
-        call_margin_sprite.set_z_order(1);
-        text_box.line(8, 70, "call");
+        // Empty ante, call and blind slots, the bet chips land on top of them
+        bn::vector<bn::sprite_ptr, 3> chip_slot_sprites;
+        for (int i = 0; i < 3; i++)
+        {
+            chip_slot_sprites.push_back(bn::sprite_items::chip_slot.create_sprite(bet_chips_x[i], bet_chips_y));
+            chip_slot_sprites[i].set_z_order(1);
+        }
 
-        // Blind Margin Sprites
-        bn::sprite_ptr blind_margin_sprite = bn::sprite_items::chip_margin.create_sprite(45, 50);
-        blind_margin_sprite.set_z_order(1);
-        text_box.line(32, 70, "blind");
+        // Ante, call and blind chips. They wait hidden on top of the stack.
+        bn::vector<bn::sprite_ptr, 3> bet_chip_sprites;
+        for (int i = 0; i < 3; i++)
+        {
+            bet_chip_sprites.push_back(
+                    bn::sprite_items::chips.create_sprite(chip_stack_top_position.x, chip_stack_top_position.y));
+            bet_chip_sprites[i].set_z_order(-3);
+            bet_chip_sprites[i].set_visible(false);
+        }
 
-        // Ante Chip Sprite
-        bn::sprite_ptr ante_chip_sprite = bn::sprite_items::chips.create_sprite(-18, 47);
-        ante_chip_sprite.set_visible(false);
-
-        // Call Chip Sprite
-        bn::sprite_ptr call_chip_sprite = bn::sprite_items::chips.create_sprite(18, 47);
-        call_chip_sprite.set_visible(false);
-
-        // Blind Chip Sprite
-        bn::sprite_ptr blind_chip_sprite = bn::sprite_items::chips.create_sprite(45, 47);
-        blind_chip_sprite.set_visible(false);
-
-        // Bet Chip Sprite
-        bn::sprite_ptr bet_chip_sprite = bn::sprite_items::chips.create_sprite(-40, 47);
-        int bet_chip_index = 0; // 0 = 1, 1 = 2, 2 = 4, 3 = 8, 4 = 16, 5 = 32F
-
+        int bet_chip_index = 0; // 0 = 1, 1 = 2, 2 = 4, 3 = 8, 4 = 16, 5 = 32
         int bet_amount = 1;
 
-        for (int i = 0; i < 10; i++)
-            bn::core::update();
+        bn::vector<bn::sprite_ptr, 8> bet_sprites;
+        TextBox bet_box(text_generator, bet_sprites);
+        bet_box.set_alignment(TextBox::alignment_type::LEFT);
+
+        auto redraw_bet = [&]()
+        {
+            chip_stack_sprite.set_palette(chip_palette_item(bet_chip_index));
+            bet_box.clear();
+            bet_box.line(bet_label_x, chip_labels_y, text::format<16>("Bet: ${}", bet_amount));
+        };
+        redraw_bet();
+
+        text_box.set_alignment(TextBox::alignment_type::CENTER)
+                .line(bet_chips_x[0], chip_labels_y, "ante")
+                .line(bet_chips_x[1], chip_labels_y, "call")
+                .line(bet_chips_x[2], chip_labels_y, "blind")
+                .set_alignment(TextBox::alignment_type::LEFT);
+
+        constexpr int chip_frames = 16;
+
+        // Slides a chip off the player's stack into its bet slot.
+        auto place_bet_chip = [&](int slot)
+        {
+            bn::sprite_ptr &chip_sprite = bet_chip_sprites[slot];
+            chip_sprite.set_palette(chip_palette_item(bet_chip_index));
+            chip_sprite.set_position(chip_stack_top_position.x, chip_stack_top_position.y);
+            chip_sprite.set_visible(true);
+            move_sprite(chip_sprite, bet_chips_x[slot], bet_chips_y, chip_frames);
+        };
+
+        // Slides every chip on the table to a point and takes it off the table.
+        auto collect_bet_chips = [&](const Position &destination)
+        {
+            for (bn::sprite_ptr &chip_sprite : bet_chip_sprites)
+            {
+                if (chip_sprite.visible())
+                {
+                    move_sprite(chip_sprite, destination.x, destination.y, chip_frames);
+                    chip_sprite.set_visible(false);
+                }
+            }
+        };
+
+        // The dealer matches the player's bets, one chip per bet, into the stack.
+        auto pay_winnings = [&]()
+        {
+            for (bn::sprite_ptr &chip_sprite : bet_chip_sprites)
+            {
+                chip_sprite.set_position(dealer_chips_position.x, dealer_chips_position.y);
+                chip_sprite.set_visible(true);
+                move_sprite(chip_sprite, chip_stack_top_position.x, chip_stack_top_position.y, chip_frames);
+                chip_sprite.set_visible(false);
+            }
+        };
+
+        if (fade_in)
+        {
+            constexpr int fade_in_frames = 32;
+
+            bn::bg_palettes_fade_to_action bg_fade_action(fade_in_frames, 0);
+            bn::sprite_palettes_fade_to_action sprite_fade_action(fade_in_frames, 0);
+
+            while (!bg_fade_action.done())
+            {
+                bg_fade_action.update();
+                sprite_fade_action.update();
+                bn::core::update();
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 10; i++)
+                bn::core::update();
+        }
 
         bool play = true;
         while (play)
@@ -203,29 +240,28 @@ namespace Game
                 if (bn::keypad::b_pressed())
                 {
                     play = false;
-                    return SceneType::MENU; // Return to menu
+                    return false; // Leave the table
                 }
                 else if (bn::keypad::up_pressed() && bet_amount < 32 && (bet_amount * 4) < money)
                 {
                     // Increase bet amount
                     bet_amount *= 2;
                     bet_chip_index++;
-                    bet_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
+                    redraw_bet();
                 }
                 else if (bn::keypad::down_pressed() && bet_amount > 1)
                 {
                     // Decrease bet amount
                     bet_amount /= 2;
                     bet_chip_index--;
-                    bet_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
+                    redraw_bet();
                 }
                 else if (bn::keypad::a_pressed() && money)
                 {
                     // Place bet
                     money -= bet_amount;
                     redraw_money();
-                    ante_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
-                    ante_chip_sprite.set_visible(true);
+                    place_bet_chip(0);
 
                     // Deal pockets
                     deck.shuffle();
@@ -235,15 +271,15 @@ namespace Game
                     opponent_pocket = table.get_opponent_pocket();
 
                     // Move card sprites
-                    move_card(player_hand_sprite[0], (player_hand_position.x - 10), player_hand_position.y);
+                    move_sprite(player_hand_sprite[0], hand_cards_x[0], player_hand_y);
                     show_card(player_pocket.card1, player_hand_sprite[0]);
 
-                    move_card(opponent_hand_sprite[0], (player_hand_position.x - 10), -player_hand_position.y);
+                    move_sprite(opponent_hand_sprite[0], hand_cards_x[0], opponent_hand_y);
 
-                    move_card(player_hand_sprite[1], (player_hand_position.x + 10), player_hand_position.y);
+                    move_sprite(player_hand_sprite[1], hand_cards_x[1], player_hand_y);
                     show_card(player_pocket.card2, player_hand_sprite[1]);
 
-                    move_card(opponent_hand_sprite[1], (player_hand_position.x + 10), -player_hand_position.y);
+                    move_sprite(opponent_hand_sprite[1], hand_cards_x[1], opponent_hand_y);
 
                     table.set_state(Poker::Table::State::FLOP);
 
@@ -254,7 +290,7 @@ namespace Game
                     // Move card sprites
                     for (int i = 0; i < 3; i++)
                     {
-                        move_card(dealer_cards_sprite[i], dealer_cards_x[i], 0);
+                        move_sprite(dealer_cards_sprite[i], dealer_cards_x[i], dealer_cards_y);
                         show_card(dealer.get_cards()[i], dealer_cards_sprite[i]);
                     }
                     table.set_state(Poker::Table::State::TURN);
@@ -265,6 +301,7 @@ namespace Game
                 if (bn::keypad::b_pressed())
                 {
                     // Fold
+                    collect_bet_chips(dealer_chips_position);
                     save_money(money);
                     table.set_state(Poker::Table::State::END);
                     play = false;
@@ -274,18 +311,15 @@ namespace Game
                     // Call
                     money -= bet_amount * 2;
                     redraw_money();
-                    call_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
-                    call_chip_sprite.set_visible(true);
-
-                    blind_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_chip_index));
-                    blind_chip_sprite.set_visible(true);
+                    place_bet_chip(1);
+                    place_bet_chip(2);
 
                     table.deal_turn();
 
                     Poker::Dealer dealer = table.get_dealer();
 
                     // Move card sprites
-                    move_card(dealer_cards_sprite[3], dealer_cards_x[3], 0);
+                    move_sprite(dealer_cards_sprite[3], dealer_cards_x[3], dealer_cards_y);
                     show_card(dealer.get_cards()[3], dealer_cards_sprite[3]);
                     table.set_state(Poker::Table::State::RIVER);
 
@@ -293,7 +327,7 @@ namespace Game
 
                     dealer = table.get_dealer();
 
-                    move_card(dealer_cards_sprite[4], dealer_cards_x[4], 0);
+                    move_sprite(dealer_cards_sprite[4], dealer_cards_x[4], dealer_cards_y);
                     show_card(dealer.get_cards()[4], dealer_cards_sprite[4]);
                     table.set_state(Poker::Table::State::SHOWDOWN);
 
@@ -308,16 +342,21 @@ namespace Game
                     switch (res.player_result)
                     {
                     case (Poker::MatchResult::WIN):
-                        text_box.line(80, 70, "You Won!");
+                        text_box.line(40, -70, "You Won!");
+                        collect_bet_chips(chip_stack_top_position);
+                        pay_winnings();
                         money += res.pot;
+                        redraw_money();
                         save_money(money);
                         break;
                     case (Poker::MatchResult::LOSE):
-                        text_box.line(80, 70, "You Lost!");
+                        text_box.line(40, -70, "You Lost!");
+                        collect_bet_chips(dealer_chips_position);
                         save_money(money);
                         break;
                     default:
-                        text_box.line(80, 70, "TIE");
+                        text_box.line(40, -70, "TIE");
+                        collect_bet_chips(chip_stack_top_position);
                         break;
                     }
 
@@ -330,14 +369,20 @@ namespace Game
                 {
                     play = false;
 
-                    move_card(opponent_hand_sprite[0], deck_position.x, deck_position.y);
-                    move_card(opponent_hand_sprite[1], deck_position.x, deck_position.y);
-                    for (bn::sprite_ptr card_sprite : dealer_cards_sprite)
+                    constexpr int collect_frames = 12;
+
+                    for (bn::sprite_ptr &card_sprite : opponent_hand_sprite)
                     {
-                        move_card(card_sprite, deck_position.x, deck_position.y);
+                        move_sprite(card_sprite, deck_position.x, deck_position.y, collect_frames);
                     }
-                    move_card(player_hand_sprite[0], deck_position.x, deck_position.y);
-                    move_card(player_hand_sprite[1], deck_position.x, deck_position.y);
+                    for (bn::sprite_ptr &card_sprite : dealer_cards_sprite)
+                    {
+                        move_sprite(card_sprite, deck_position.x, deck_position.y, collect_frames);
+                    }
+                    for (bn::sprite_ptr &card_sprite : player_hand_sprite)
+                    {
+                        move_sprite(card_sprite, deck_position.x, deck_position.y, collect_frames);
+                    }
                 }
                 break;
             default:
@@ -345,6 +390,6 @@ namespace Game
             }
             bn::core::update();
         }
-        return SceneType::GAME;
+        return true;
     }
 }

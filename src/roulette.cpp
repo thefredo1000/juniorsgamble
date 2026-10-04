@@ -10,9 +10,8 @@
 
 #include "bn_regular_bg_items_title_screen.h"
 
-#include "common_variable_8x16_sprite_font.h"
-
 #include "game_input.h"
+#include "madspixel_sprite_font.h"
 #include "money.h"
 #include "roulette_engine.h"
 #include "text_box.h"
@@ -56,7 +55,7 @@ namespace Game
 {
     void roulette_run()
     {
-        bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
+        bn::sprite_text_generator text_generator(Game::madspixel_sprite_font);
 
         bn::regular_bg_ptr table_background = bn::regular_bg_items::title_screen.create_bg(8, 48);
         table_background.set_blending_enabled(false);
@@ -118,7 +117,7 @@ namespace Game
         auto redraw_hint = [&]()
         {
             hint_box.clear();
-            hint_box.line(0, 40, "Up/Down: Amount  Left/Right: Bet");
+            hint_box.line(0, 40, "Up/Down: Amount  L/R: Bet");
             hint_box.line(0, 54, bet.type == BetType::straight_up
                                   ? "L/R: Number  A: Spin  B: Leave"
                                   : "A: Spin   B: Leave");

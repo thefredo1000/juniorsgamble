@@ -104,8 +104,10 @@ namespace Game::world_map_config
     constexpr bn::string_view skip_level_question = "Wake up and move on?";
 
     constexpr bn::string_view host_dialog_lines[] = {
-        "Hi my name is Junior P. Luche!",
-        "I can't find my Peluchemon cards,",
+        "Hi my name is",
+        "Junior P. Luche!",
+        "I can't find my",
+        "Peluchemon cards,",
         "this place is strange...",
         "",
     };
@@ -113,8 +115,8 @@ namespace Game::world_map_config
     constexpr bn::string_view slot_host_dialog_lines[] = {
         "Hi, you look just like me!",
         "There's this guy at the end,",
-        "better talk to him, he knows what's",
-        "going on.",
+        "better talk to him,",
+        "he knows what's going on.",
     };
 
     constexpr bn::string_view roulette_host_dialog_lines[] = {
@@ -126,9 +128,11 @@ namespace Game::world_map_config
 
     constexpr bn::string_view sports_betting_host_dialog_lines[] = {
         "Am I hallucinating again?",
-        "The other day I ate shoe polish...",
-        "and my father told me that I was",
-        "saying a bunch of nonsense.",
+        "The other day I ate",
+        "shoe polish... and my father",
+        "told me that I was saying",
+        "a bunch of nonsense.",
+        "",
     };
 
     // ---------------------------------------------------------------------
@@ -138,7 +142,9 @@ namespace Game::world_map_config
 
     constexpr bn::string_view npc_05_dialog_lines[] = {
         "Hey, are you my brother?",
-        "I always dreamed of finding you!",
+        "",
+        "I always dreamed of",
+        "finding you!",
     };
 
     constexpr bn::string_view npc_06_dialog_lines[] = {
@@ -162,13 +168,17 @@ namespace Game::world_map_config
     };
 
     constexpr bn::string_view npc_10_dialog_lines[] = {
-        "Hey, do you know what's going on?",
-        "Something strange is happening...",
+        "Hey, do you know",
+        "what's going on?",
+        "Something strange",
+        "is happening...",
     };
 
     constexpr bn::string_view npc_11_dialog_lines[] = {
-        "I miss my family a lot, I think",
-        "the man at the end can help us.",
+        "I miss my family a lot,",
+        "I think the man at the end",
+        "can help us.",
+        "",
     };
 
     constexpr bn::string_view npc_12_dialog_lines[] = {
@@ -193,7 +203,9 @@ namespace Game::world_map_config
 
     constexpr bn::string_view npc_16_dialog_lines[] = {
         "The man at the end...",
-        "Maybe he knows what's going on.",
+        "",
+        "Maybe he knows",
+        "what's going on.",
     };
 
     constexpr bn::string_view final_npc_dialog_lines[] = {

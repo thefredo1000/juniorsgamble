@@ -10,9 +10,8 @@
 
 #include "bn_regular_bg_items_title_screen.h"
 
-#include "common_variable_8x16_sprite_font.h"
-
 #include "game_input.h"
+#include "madspixel_sprite_font.h"
 #include "money.h"
 #include "sports_betting_engine.h"
 #include "text_box.h"
@@ -44,7 +43,7 @@ namespace Game
 {
     void sports_betting_run()
     {
-        bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
+        bn::sprite_text_generator text_generator(Game::madspixel_sprite_font);
 
         bn::regular_bg_ptr table_background = bn::regular_bg_items::title_screen.create_bg(8, 48);
         table_background.set_blending_enabled(false);
@@ -105,7 +104,7 @@ namespace Game
         bn::vector<bn::sprite_ptr, 24> hint_sprites;
         TextBox hint_box(text_generator, hint_sprites);
         hint_box.set_alignment(TextBox::alignment_type::CENTER)
-                .line(0, 40, "Up/Down: Amount  Left/Right: Bet")
+                .line(0, 40, "Up/Down: Amount  L/R: Bet")
                 .line(0, 54, "A: Simulate   B: Leave");
 
         bool simulating = false;

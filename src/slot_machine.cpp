@@ -16,9 +16,9 @@
 #include "bn_sprite_items_cards_clubs.h"
 #include "bn_sprite_items_chips.h"
 
-#include "common_variable_8x16_sprite_font.h"
-
+#include "chip_palettes.h"
 #include "game_input.h"
+#include "madspixel_sprite_font.h"
 #include "money.h"
 #include "text_box.h"
 #include "text_format.h"
@@ -98,7 +98,7 @@ namespace Game
 {
     void slot_machine_run()
     {
-        bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
+        bn::sprite_text_generator text_generator(Game::madspixel_sprite_font);
 
         bn::regular_bg_ptr table_background = bn::regular_bg_items::title_screen.create_bg(8, 48);
         table_background.set_blending_enabled(false);
@@ -141,12 +141,12 @@ namespace Game
         TextBox bet_label_box(text_generator, bet_label_sprites);
         bet_label_box.set_alignment(TextBox::alignment_type::LEFT);
 
-        bn::sprite_ptr bet_chip_sprite = bn::sprite_items::chips.create_sprite(80, 70);
+        bn::sprite_ptr bet_chip_sprite = bn::sprite_items::chips.create_sprite(106, 68);
         int bet_index = 0;
 
         auto redraw_bet = [&]()
         {
-            bet_chip_sprite.set_tiles(bn::sprite_items::chips.tiles_item().create_tiles(bet_index));
+            bet_chip_sprite.set_palette(chip_palette_item(bet_index));
             bet_label_box.clear();
             bet_label_box.line(40, 70, text::format<16>("Bet: {}", bet_values[bet_index]));
         };

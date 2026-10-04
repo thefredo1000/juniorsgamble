@@ -3,7 +3,7 @@
 
 namespace Game
 {
-    void poker_run(bool show_title_screen);
+    void poker_run();
 }
 
 #endif // POKER_MINIGAME_H

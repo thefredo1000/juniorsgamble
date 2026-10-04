@@ -9,15 +9,8 @@ namespace Game
 {
     namespace
     {
-        // The world map already showed the poker NPC's dialog, so the port's own
-        // title screen would only get in the way.
-        void run_poker()
-        {
-            poker_run(false);
-        }
-
         constexpr minigame_definition minigames[] = {
-            { minigame_id::poker,          "Poker",            "Start poker now?",   run_poker },
+            { minigame_id::poker,          "Poker",            "Start poker now?",   poker_run },
             { minigame_id::slots,          "Slots",            "Play the slots?",    slot_machine_run },
             { minigame_id::roulette,       "Roulette",         "Play roulette?",     roulette_run },
             { minigame_id::sports_betting, "Sports betting",   "Bet on the match?",  sports_betting_run }

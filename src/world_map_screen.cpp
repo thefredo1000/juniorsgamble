@@ -21,9 +21,9 @@
 #include "bn_regular_bg_ptr.h"
 #include "bn_sprite_items_junior.h"
 
-#include "common_variable_8x16_sprite_font.h"
 #include "dialogue_box.h"
 #include "game_input.h"
+#include "madspixel_sprite_font.h"
 #include "minigame.h"
 #include "money.h"
 #include "text_box.h"
@@ -307,7 +307,7 @@ namespace Game
         // have to agree with that.
         constexpr direction state_facing_default = direction::down;
 
-        bn::sprite_text_generator text_generator(common::variable_8x16_sprite_font);
+        bn::sprite_text_generator text_generator(Game::madspixel_sprite_font);
         text_generator.set_center_alignment();
 
         bn::vector<bn::sprite_ptr, 64> hud_sprites;
